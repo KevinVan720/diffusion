@@ -171,6 +171,9 @@ c xx: treat line as end of input marker
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
  2    continue
 
+
+      call readInputFromCML
+
       KTsig=KTsig*Tcut_critical
       qhatA=(qhatLow-qhatHigh)/(TLow-THigh)
       qhatB=(TLow*qhatHigh-THigh*qhatLow)/(TLow-THigh)
@@ -218,4 +221,75 @@ c error-exit
       write(6,*) 'Terminating ...'
       stop
       end
+      
+      
+! Yingru
+      Subroutine readInputFromCML()
+!     Purpose:
+!     Read inputs from command line
+      Implicit None
+      Include 'df_coms.f'
+      Include 'ucoms.f'
+      
+      Integer QNum, ArgIndex   !QNum is the total number of arguments, ArgIndex gives the index to the one currently reading
+      
+      Character*60 :: buffer
+      Character*20 :: varName
+!      Integer IResult
+      Double Precision DResult     
+      
+!      write(6, *) "here reading from command line" 
+      QNum = iargc()
+      
+      Do ArgIndex = 1, QNum
+        call getarg(ArgIndex, buffer)
+!        write(6, *) buffer
+        call processAssignment(buffer,"=", varName, DResult)
+        
+        if (varName .EQ. "kpamp") KPamp = DResult  ! the amplitude for kP
+        if (varName .EQ. "kpsig") KPsig = DResult  ! the sigma for kP       
+        if (varName .EQ. "ktamp") KTamp = DResult  ! the amplitude for kT
+        if (varName .EQ. "ktsig") KTsig = DResult  ! the sigma for kT
+        if (varName .EQ. "prekt") preKT = DResult  ! the sigma for preKT
+      End Do  ! ArgIndex
+      
+      End Subroutine
+      
+      
+      Subroutine processAssignment(string, separator, 
+     &                            varName, DResult)
+!     This subroutine process a string assignment
+!     First it seprate string into LHS and RHS according to separator.
+!     The the LHS is coverted into variable using only lower case letters,
+!     The RHS is converted into numerical values
 
+      Implicit None
+      
+      Character (*) :: string, varName
+      Character*60 :: LHS, RHS
+      Character separator
+      Double Precision DResult
+      
+      Integer break_here, I, cha
+      
+      varName = ""
+      break_here = index(string, separator)
+      LHS = adjustl(string(:break_here-1))
+      RHS = adjustl(string(break_here+1:))
+      
+      ! convert LHS to lower case:
+      Do I = 1, len_trim(LHS)
+        cha = ichar(LHS(I:I))
+        If (cha>=65 .AND. cha<90) Then
+          varName(I:I) = char(cha+32)
+        Else
+          varName(I:I) = LHS(I:I)
+        Endif
+      EndDo
+      
+!      write(6, *) varName 
+      ! convert RHS to numerics(here only take double precision):
+      Read(RHS, fmt='(f15.8)') DResult
+      
+      End Subroutine
+      

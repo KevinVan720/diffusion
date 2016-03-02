@@ -36,7 +36,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       call parameterRead
-
+   
 c     debug
 
 c     "static" can be:  0 -- Chiho's hydro;
@@ -2017,13 +2017,22 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       integer numPart,iret,index_xy
       double precision mass,sigma_HQ,dum_rx,dum_ry
       double precision rlu
+      character*80 file30
 
       numXY=0
 
  2201 continue
 
-      read(unit=5,fmt=*,err=2204,end=2202) dum_rx,dum_ry
-
+!      read(unit=5,fmt=*,err=2204,end=2202) dum_rx,dum_ry
+! Yingru (Read from file)
+      call getenv('ftn30', file30)
+      If (file30(1:4) .NE. '    ') Then
+        OPEN(UNIT=30, FILE=file30, STATUS='OLD', FORM='FORMATTED')
+      End If
+     
+      read(unit=30,fmt=*,err=2204,end=2202) dum_rx, dum_ry
+!      write(6, *) dum_rx, dum_ry
+! end of Yingru modify
       numXY=numXY+1
       initX(numXY)=dum_rx
       initY(numXY)=dum_ry
