@@ -841,12 +841,19 @@ c set transport coefficient if necessary
                   call get_qhat(qhat,T,plength)  ! this is qhat of HQ
                   qhat = qhat*KFactor/C_F ! this is qhat in our code
                                           ! qhat of gluon is CA*qhat
-c rescale qhat by p and T dependent K factor
-                  KPfactor=1d0+KPamp*exp(-plength**2/2.0/KPsig/KPsig)
-                  KTfactor=(1d0+KTamp*exp(-(T-Tcut_critical)**2/2.0/
-     &                     KTsig/KTsig))*preKT
-                  KPTfactor=KPfactor*KTfactor*KTfactor
-                  qhat=qhat*KPTfactor
+c rescale qhat with p and T dependent K factor
+c a second parameterization:
+c qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/2*KTsig**2)
+                  KPfactor = KPamp*exp(-plength**2/2.0/KPsig/KPsig)
+		  KTfactor = KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
+		  qhat = qhat*preKT + KPfactor + KTfactor
+
+
+!                  KPfactor=1d0+KPamp*exp(-plength**2/2.0/KPsig/KPsig)
+!                  KTfactor=(1d0+KTamp*exp(-(T-Tcut_critical)**2/2.0/
+!     &                     KTsig/KTsig))*preKT
+!                  KPTfactor=KPfactor*KTfactor*KTfactor
+!                  qhat=qhat*KPTfactor
 
                   alpha = qhat*C_F/4d0/T**3
                   D2piT = 6.2832d0/alpha
@@ -929,7 +936,9 @@ c                  time_num=int((time-time_init)/delta_tg+0.5d0)+1
                   max_Ng=max_dNgfnc(time_num,temp_num,HQenergy_num)
      &                   *6d0/D2piT
 
-                  if(qhat_TP.eq.1) delta_Ng=delta_Ng*KTfactor
+!                  if(qhat_TP.eq.1) delta_Ng=delta_Ng*KTfactor
+! by yingru, second parameterization: (let us not to rescale alpha_s this time)
+
 
 c                  write(6,*) temp_num,HQenergy_num,delta_Ng
 

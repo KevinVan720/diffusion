@@ -7,9 +7,9 @@ qhat_TP...    1       ! 0: constant qhat/T^3
                       ! 1: use table of qhat/T^3 as functions of T,p
                       ! 2: use linear parametrization
 # 5 parameters of T, p dependent K factors
-KPamp.....    7.0     ! amplitude of P Kactor
-KPsig.....    5.0     ! width of P Kactor
-KTamp.....    2.0     ! amplitude of T Kactor, effectively on alphas
+KPamp.....    3.0     ! amplitude of P Kactor
+KPsig.....    7.0     ! width of P Kactor
+KTamp.....    10.0    ! amplitude of T Kactor, effectively on alphas
 KTsig.....    0.05    ! width of T Kactor, in the unit of Tc
 preKT.....    0.7     ! overall rescale of T Kactor
 #
