@@ -69,7 +69,7 @@ Tcut......    0.165   ! Below which the Langevin evolution stops (valid with tem
 # Cross section at y=0 (dsigma/dy|y=0 unit mb)
 sigma_c0..    0.68432  ! LHC AA->c
 sigma_b0..    0.056263 ! LHC AA->b
-num_binary    -2000000     ! number of binary collisions, negative for no constraint
+num_binary    0     ! number of binary collisions, negative for no constraint
                        ! only works for HQ_input=3
 # End of list: do NOT remove the symbol "xx"
 xx
