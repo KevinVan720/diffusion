@@ -3,15 +3,20 @@
 #
 flag_rad..    2       ! Energy loss mechanism: 0-collisional; 1-radiative; 2-both.
 iflav.....    4       ! Flavor of parton to select: 4-charm; 5-beauty.
-qhat_TP...    1       ! 0: constant qhat/T^3
+qhat_TP...    3       ! 0: constant qhat/T^3
                       ! 1: use table of qhat/T^3 as functions of T,p
                       ! 2: use linear parametrization
+                      ! 3: use linear parameterization with momentum dependence
 # 5 parameters of T, p dependent K factors
 KPamp.....    3.0     ! amplitude of P Kactor
 KPsig.....    7.0     ! width of P Kactor
 KTamp.....    10.0    ! amplitude of T Kactor, effectively on alphas
 KTsig.....    0.05    ! width of T Kactor, in the unit of Tc
 preKT.....    0.7     ! overall rescale of T Kactor
+#
+qhatMin...    0.2     ! valid only qhat_TP=3
+qhatSlope.    2.0
+qhatPower.    0.0
 #
 D2piT.....    5.0     ! Heavy quark spatial diffusion coefficient: D(2piT)
                       ! valid only when qhat_TP=0
@@ -64,7 +69,7 @@ tsteps_cut    140     ! Control total timesteps for Langevin evolution
                       ! (One timestep for 0.1~fm/c)
                       ! Necessary for static=1 and helpful for static=2
 temp_cut..    1       ! 0 for no cut, 1 for cut (necessary for dynamic medium)
-Tcut......    0.165   ! Below which the Langevin evolution stops (valid with temp_cut=1)
+Tcut......    0.154   ! Below which the Langevin evolution stops (valid with temp_cut=1)
 #
 # Cross section at y=0 (dsigma/dy|y=0 unit mb)
 sigma_c0..    0.68432  ! LHC AA->c

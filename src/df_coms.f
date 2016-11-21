@@ -8,6 +8,7 @@ c     common-blocks:
       
       double precision initt,T_static,alpha,w,Tcut_critical,D2piT
       double precision KFactor,KPamp,KPsig,KTamp,KTsig,preKT
+      double precision qhatMin, qhatSlope, qhatPower
       double precision TLow,THigh,qhatLow,qhatHigh,qhatA,qhatB
       double precision tmax,x0,xmax,y0,ymax,h0,hmax,tau
       integer pdep_flag,iflav,ref_frame,exp_setup,tsteps_cut
@@ -40,7 +41,8 @@ c set number of Langevin steps within hydro step
      &                ebe_flag,exp_setup
       common/diffusionConst/D2piT,alpha,KFactor,
      &                TLow,THigh,qhatLow,qhatHigh,qhatA,qhatB,
-     &                KTamp,KTsig,KPamp,KPsig,preKT
+     &                KTamp,KTsig,KPamp,KPsig,preKT,
+     &                qhatMin,qhatSlope,qhatPower
       common/otherFlag1/static,static_cool,T_static,
      &                  temp_cut,wt_num,tsteps_cut,num_binary,qhat_TP
       common/otherFlag2/Tcut_critical,wt_int,wt_Tab_min
