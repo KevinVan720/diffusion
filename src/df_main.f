@@ -866,12 +866,11 @@ c2 qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/
                   D2piT = 6.2832d0/alpha
                   qhat = qhat*T**3/C_F ! this is qhat in our code
                else if(qhat_TP.eq.3) then
-                 plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
-                 qhat = 4d0/(qhatMin+qhatSlope*(T-Tcut_critical))
-                 qhat = qhat*Log(1.0 + plength**qhatPower) ! this is qhat_over_T3
-                 qhat = qhat*T**3 ! this is qhat
-                 alpha = qhat*C_F/4d0/T**3
-                 D2piT = 6.2832d0/alpha
+                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
+                  D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical))/
+     &                     Log(1.0+plength**qhatPower)
+                  alpha=6.2832d0/D2piT
+                  qhat = 4d0*alpha/C_F*T**3 ! this is qhat used in code 
                else
                   write(6,*) "Wrong value for qhat_TP."
                   write(6,*) "Terminating ..."
