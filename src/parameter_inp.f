@@ -41,7 +41,8 @@ c diffusion/noise parameters:
       qhatMin= 0.2d0
       qhatSlope = 2.0d0
       qhatPower = 0d0
-      
+      preP = 1d0     
+ 
       alpha=6.2832d0/D2piT
       eta_cut=0.5d0   ! rapidity cut, symmetric inteval
       pT_init_min=0.25d0
@@ -135,6 +136,8 @@ c xx: treat line as end of input marker
             read(inputstr,fmt=*,err=88,end=88) preKT
          CASE ("qhatMin...")
             read(inputstr,fmt=*,err=88,end=88) qhatMin
+         CASE ("preP......")
+            read(inputstr,fmt=*,err=88,end=88) preP
          CASE ("qhatSlope.")
             read(inputstr,fmt=*,err=88,end=88) qhatSlope
          CASE ("qhatPower.")
@@ -201,6 +204,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          write(6,*) "qhatMin: ", qhatMin
          write(6,*) "qhatSlope: ", qhatSlope
          write(6,*) "qhatPower: ", qhatPower
+         write(6,*) "preP: ", preP
          write(6,*) "D(2piT): ",D2piT
          write(6,*) "qhatA: ",qhatA
          write(6,*) "qhatB: ",qhatB
@@ -267,6 +271,7 @@ c error-exit
         if (varName .EQ. "qhatmin") qhatMin = DResult   !for linear parameterization
         if (varName .EQ. "qhatslope") qhatSlope = DResult  ! for linear parameterization
         if (varName .EQ. "qhatpower") qhatPower = DResult   ! for linear parameterization
+        if (varName .EQ. "prep") preP = DResult
       End Do  ! ArgIndex
       
       End Subroutine

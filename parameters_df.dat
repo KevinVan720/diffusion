@@ -17,6 +17,7 @@ preKT.....    0.7     ! overall rescale of T Kactor
 qhatMin...    0.2     ! valid only qhat_TP=3
 qhatSlope.    2.0
 qhatPower.    0.0
+preP......    1.0
 #
 D2piT.....    5.0     ! Heavy quark spatial diffusion coefficient: D(2piT)
                       ! valid only when qhat_TP=0

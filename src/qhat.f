@@ -43,7 +43,9 @@ c            write(6,*) i,j,qhat_over_T3(i,j)
 
       end subroutine
 
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+
+
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       subroutine get_qhat(qhat_value,temperature,momentum)
 

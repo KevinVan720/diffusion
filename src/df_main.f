@@ -707,6 +707,7 @@ c dummy for OSU hydro at the moment
       integer ctl_OSU
       double precision KTfactor,KPfactor,KPTfactor
 
+      double precision dum_D2piT
       rgau_mean=0d0
       flag_stop=0
 
@@ -847,10 +848,11 @@ c2 qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/
 !2                  KPfactor = KPamp*exp(-plength**2/2.0/KPsig/KPsig)
 !2		  KTfactor = KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
 !2		  qhat = qhat*preKT + KPfactor + KTfactor
-               KPfactor=KPamp*exp(-plength**2/2.0/KPsig/KPsig)
+!               KPfactor=KPamp*exp(-plength**2/2.0/KPsig/KPsig)
+               KPfactor = 1d0
                KTfactor=KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
 !2             qhat = qhat*preKT*(1+KPfactor+KTfactor)
-               qhat = qhat*preKT*(1+KPfactor)
+               qhat = qhat*preKT*(1+KTfactor)
 !4               qhat = qhat*preKT*(1+KPfactor)*(1+KTfactor)
 !1                  KPfactor=1d0+KPamp*exp(-plength**2/2.0/KPsig/KPsig)
 !1                  KTfactor=(1d0+KTamp*exp(-(T-Tcut_critical)**2/2.0/
@@ -868,7 +870,7 @@ c2 qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/
                else if(qhat_TP.eq.3) then
                   plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
                   D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical))/
-     &                     Log(1.0+plength**qhatPower)
+     &                     Log(1.0+preP*plength**qhatPower)
                   alpha=6.2832d0/D2piT
                   qhat = 4d0*alpha/C_F*T**3 ! this is qhat used in code 
                else
