@@ -3,10 +3,12 @@
 #
 flag_rad..    2       ! Energy loss mechanism: 0-collisional; 1-radiative; 2-both.
 iflav.....    4       ! Flavor of parton to select: 4-charm; 5-beauty.
-qhat_TP...    3       ! 0: constant qhat/T^3
+qhat_TP...    0       ! 0: constant qhat/T^3
                       ! 1: use table of qhat/T^3 as functions of T,p
                       ! 2: use linear parametrization
                       ! 3: use linear parameterization with momentum dependence
+                      ! 4: use poly parameterization with momentum dependence
+                      ! 5: test test
 # 5 parameters of T, p dependent K factors
 KPamp.....    3.0     ! amplitude of P Kactor
 KPsig.....    7.0     ! width of P Kactor
@@ -14,10 +16,11 @@ KTamp.....    10.0    ! amplitude of T Kactor, effectively on alphas
 KTsig.....    0.05    ! width of T Kactor, in the unit of Tc
 preKT.....    0.7     ! overall rescale of T Kactor
 #
-qhatMin...    0.2     ! valid only qhat_TP=3
+qhatMin...    0.2     ! valid only qhat_TP=3 or 4
 qhatSlope.    2.0
 qhatPower.    0.0
 preP......    1.0
+qhatC.....    0.0
 #
 D2piT.....    5.0     ! Heavy quark spatial diffusion coefficient: D(2piT)
                       ! valid only when qhat_TP=0

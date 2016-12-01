@@ -869,10 +869,41 @@ c2 qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/
                   qhat = qhat*T**3/C_F ! this is qhat in our code
                else if(qhat_TP.eq.3) then
                   plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
-                  D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical))/
-     &                     Log(1.0+preP*plength**qhatPower)
+                  if (plength .lt. 0.368) then
+                        plength = 0.368d0
+                  endif
+                  dum_D2piT = Log(1.0+preP*plength**qhatPower)
+                  if (dum_D2piT .lt. 0.000001) then
+                      dum_D2piT = 0.000001
+                  endif
+
+                  D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical))
+     &                    /dum_D2piT
                   alpha=6.2832d0/D2piT
                   qhat = 4d0*alpha/C_F*T**3 ! this is qhat used in code 
+               
+               else if(qhat_TP.eq.4) then
+                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
+                  if (plength .lt. 0.368) then
+                        plength=0.368d0
+                  endif
+                  D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical)+
+     &      qhatC*(T-Tcut_critical)**2)/Log(1.0+preP*plength**qhatPower)
+!                   D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical))
+!     &                  /Log(qhatC*(1.0+preP*plength**qhatPower))
+                  alpha=6.2832d0/D2piT
+                  qhat = 4d0*alpha/C_F*T**3 ! this is qhat used in code
+               else if(qhat_TP .eq. 5) then
+                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
+                  dum_D2piT=6.2832d0*(3.0606+19.3082*(T-Tcut_critical))
+                  D2piT=6.28320d0*(0.7804+282.1966*(T-Tcut_critical)**2)
+                  if(dum_D2piT .lt. D2piT) then
+                      D2piT = dum_D2piT
+                  endif
+                D2piT=qhatSlope*D2piT/Log(1.66*(1d0+1.08*plength**2.68))
+                alpha=6.2832d0/D2piT
+                qhat=4d0*alpha/C_F*T**3
+
                else
                   write(6,*) "Wrong value for qhat_TP."
                   write(6,*) "Terminating ..."
