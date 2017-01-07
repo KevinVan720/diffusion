@@ -863,10 +863,9 @@ c2 qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/
                   alpha = qhat*C_F/4d0/T**3
                   D2piT = 6.2832d0/alpha
                else if(qhat_TP.eq.2) then
-                  qhat = (qhatA*T+qhatB)*KFactor  ! this is qhat_F/T^3
-                  alpha = qhat/4d0
-                  D2piT = 6.2832d0/alpha
-                  qhat = qhat*T**3/C_F ! this is qhat in our code
+                  D2piT= qhatMin+qhatSlope*(T-Tcut_critical)
+                  alpha= 6.2832d0/D2piT
+                  qhat = 4d0*alpha*T**3/C_F  ! this is qhat used in code
                else if(qhat_TP.eq.3) then
                   plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
                   if (plength .lt. 0.368) then

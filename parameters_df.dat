@@ -3,7 +3,7 @@
 #
 flag_rad..    2       ! Energy loss mechanism: 0-collisional; 1-radiative; 2-both.
 iflav.....    4       ! Flavor of parton to select: 4-charm; 5-beauty.
-qhat_TP...    0       ! 0: constant qhat/T^3
+qhat_TP...    2       ! 0: constant qhat/T^3
                       ! 1: use table of qhat/T^3 as functions of T,p
                       ! 2: use linear parametrization
                       ! 3: use linear parameterization with momentum dependence
