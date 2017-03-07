@@ -144,9 +144,9 @@ c parameters/variables for gluon radiation
       double precision max_dNgfnc(t_gn+1,temp_gn,HQener_gn)
 
       double precision HQener_max,t_max,temp_max,temp_min
-      parameter(HQener_max=80.d0)
+      parameter(HQener_max=100.d0)
       parameter(t_max=14.d0)
-      parameter(temp_max=0.55d0)
+      parameter(temp_max=0.65d0)
       parameter(temp_min=0.15d0)
 
       double precision delta_HQener,delta_tg,delta_temp
@@ -175,10 +175,10 @@ c parameters/variables for gluon radiation
      &                 cHQE_gtmax,count_Ecut,Etot_gluon
 
       integer gamma_nT,gamma_np
-      parameter(gamma_nT=50,gamma_np=6)
+      parameter(gamma_nT=50,gamma_np=7)
       double precision delta_Te
       parameter(delta_Te=0.02d0)
-      double precision qhat_over_T3(1:gamma_nT,-1:gamma_np+1)
+      double precision qhat_over_T3(7:gamma_nT+6,-2:gamma_np+1)
       common/qhatTP/qhat_over_T3
     
 
