@@ -840,30 +840,29 @@ c set transport coefficient if necessary
                else if(qhat_TP.eq.1) then
                   plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
                   call get_qhat(qhat,T,plength)  ! this is qhat of HQ
+                                                 ! from pQCD calculation
                   qhat = qhat*KFactor/C_F ! this is qhat in our code
                                           ! qhat of gluon is CA*qhat
 c2 rescale qhat with p and T dependent K factor
 c2 a second parameterization:
 c2 qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/2*KTsig**2)
 !2                  KPfactor = KPamp*exp(-plength**2/2.0/KPsig/KPsig)
-!2		  KTfactor = KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
 !2		  qhat = qhat*preKT + KPfactor + KTfactor
-!               KPfactor=KPamp*exp(-plength**2/2.0/KPsig/KPsig)
-               KPfactor = 1d0
-               KTfactor=KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
-!2             qhat = qhat*preKT*(1+KPfactor+KTfactor)
-               qhat = qhat*preKT*(1+KTfactor)
-!4               qhat = qhat*preKT*(1+KPfactor)*(1+KTfactor)
-!1                  KPfactor=1d0+KPamp*exp(-plength**2/2.0/KPsig/KPsig)
-!1                  KTfactor=(1d0+KTamp*exp(-(T-Tcut_critical)**2/2.0/
-!1     &                     KTsig/KTsig))*preKT
-!1                  KPTfactor=KPfactor*KTfactor*KTfactor
-!1                  qhat=qhat*KPTfactor
+                 KPfactor=KPamp*exp(-plength**2/2.0/KPsig/KPsig)
+!                  KPfactor = 0d0
+             KTfactor=KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
+!2                qhat = qhat*preKT*(1+KPfactor+KTfactor)
+!                 qhat = qhat*preKT*(1+KTfactor)
+             KPTfactor = preKT *(1+KPfactor)*(1+KTfactor)
+             qhat = qhat*preKT*(1+KPfactor)*(1+KTfactor)
 
                   alpha = qhat*C_F/4d0/T**3
                   D2piT = 6.2832d0/alpha
                else if(qhat_TP.eq.2) then
                   D2piT= qhatMin+qhatSlope*(T-Tcut_critical)
+                  if (D2piT .lt. 0.05d0) then
+                      D2piT = 0.05d0
+                  endif
                   alpha= 6.2832d0/D2piT
                   qhat = 4d0*alpha*T**3/C_F  ! this is qhat used in code
                else if(qhat_TP.eq.3) then
@@ -893,15 +892,23 @@ c2 qhat = preKT * qhat_pQCD + KPamp * exp(-p**2/2*KPsig**2) + KTamp * exp(-T**2/
                   alpha=6.2832d0/D2piT
                   qhat = 4d0*alpha/C_F*T**3 ! this is qhat used in code
                else if(qhat_TP .eq. 5) then
-                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
-                  dum_D2piT=6.2832d0*(3.0606+19.3082*(T-Tcut_critical))
-                  D2piT=6.28320d0*(0.7804+282.1966*(T-Tcut_critical)**2)
-                  if(dum_D2piT .lt. D2piT) then
-                      D2piT = dum_D2piT
-                  endif
-                D2piT=qhatSlope*D2piT/Log(1.66*(1d0+1.08*plength**2.68))
-                alpha=6.2832d0/D2piT
-                qhat=4d0*alpha/C_F*T**3
+!                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
+!                  dum_D2piT=6.2832d0*(3.0606+19.3082*(T-Tcut_critical))
+!                  D2piT=6.28320d0*(0.7804+282.1966*(T-Tcut_critical)**2)
+!                  if(dum_D2piT .lt. D2piT) then
+!                      D2piT = dum_D2piT
+!                  endif
+!                D2piT=qhatSlope*D2piT/Log(1.66*(1d0+1.08*plength**2.68))
+!                alpha=6.2832d0/D2piT
+!                qhat=4d0*alpha/C_F*T**3
+      
+                 D2piT=qhatMin*(1d0+qhatSlope*
+     &                 ((T-Tcut_critical)/Tcut_critical)**qhatPower)
+                 if (D2piT .lt. 0.01d0) then
+                        D2piT = 0.01d0
+                 endif
+                 alpha=6.2832d0/D2piT
+                 qhat=4d0*alpha/C_F*T**3
 
                else
                   write(6,*) "Wrong value for qhat_TP."

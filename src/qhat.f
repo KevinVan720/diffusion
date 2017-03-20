@@ -11,9 +11,9 @@
       open(unit=10,file='gamma-table.dat',
      &        status='old',form='formatted')
 
-      i=1
-      do while(i.le.gamma_nT)
-         j=-1
+      i=7
+      do while(i.le.(gamma_nT+6))
+         j=-2
          do while(j.le.gamma_np)
             read(unit=10,fmt=101,err=2098,end=2097)
      &      dummy_n,dummy_n,dummy_f,dummy_f,dummy_f,qhat_over_T3(i,j)
@@ -65,14 +65,14 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       i=int(temperature/delta_Te)
 
-      if(i.lt.1.or.i.gt.gamma_nT-1) then
+      if(i.lt.7.or.i.gt.gamma_nT+6) then
          write(6,*) "Error: T out of range for qhat!"
          write(6,*) "Terminating ..."
          stop
       endif
 
-      if(j.lt.-1) j=-1
-      if(j.gt.6) j=6
+      if(j.lt.-2) j=-2
+      if(j.gt.7) j=7
 
 c interpolate in the x (temperature) direction
 
@@ -87,7 +87,7 @@ c interpolate in the y (momentum) direction
       delta_y=log(momentum)-j
       if(delta_y.lt.0d0) delta_y=0d0
 
-      if(j.eq.6) then
+      if(j.eq.7) then
          qhat_value=qhat_j1
       else
          qhat_value=qhat_j1+delta_y*(qhat_j2-qhat_j1)

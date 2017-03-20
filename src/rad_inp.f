@@ -57,8 +57,8 @@ c read in the integral table for one time step
  2111 format(A10,2X,I3,2X,A6,2X,F8.3)
  2112 format(e10.4,4(2X,e10.4))
 
-c      write(6,*) dNg_over_dt(71,100,200)
-c      write(6,*) max_dNgfnc(71,100,200)
+      write(6,*) dNg_over_dt(71,100,200)
+      write(6,*) max_dNgfnc(71,100,200)
       write(6,*) "Read integral table successfully :)"
 
       close(10)

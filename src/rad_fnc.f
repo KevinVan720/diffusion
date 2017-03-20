@@ -126,13 +126,18 @@ c single gluon radiation formula from Wang's paper
 
       double precision dNg_over_dxdydt,alphas,splittingP,tau_f
       double precision x0g,y0g
+      double precision debug
 
 c just for checking purpose
+!      debug = qhat-4.d0*alpha*temp_med**3/C_F
+!      write(6, *) qhat, alpha, temp_med, debug
+
       if(abs(qhat-4.d0*alpha*temp_med**3/C_F).gt.EPS1) then
          write(6,*) "Problem in qhat and alpha:", qhat,alpha,temp_med
          stop
       endif
 
+      
       if(x0g*HQenergy.lt.PI*temp_med) then
          dNg_over_dxdydt = 0.d0
          goto 111
