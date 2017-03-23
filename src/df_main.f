@@ -859,8 +859,8 @@ c set transport coefficient if necessary
                   qhat = 4d0*alpha*T**3/C_F  ! this is qhat used in code
                else if(qhat_TP.eq.3) then  ! linear T and log(E)
                   D2piT=qhatMin**2*(qhatSlope+T)/(qhatPower+Log(energ))
-                  if (D2piT .lt. 0.05d0) then
-                        D2piT = 0.05d0
+                  if (D2piT .lt. 0.1d0) then
+                        D2piT = 0.1d0
                   endif
                   alpha=6.2832d0/D2piT
                   qhat=4.0*alpha/C_F*T**3
@@ -1007,7 +1007,7 @@ c random(1) corresponds to x, and random(2) corresponds to y
      &                     dNg_over_dxdydt(random(1),random(2)))
                          count_sample=count_sample+1
 c debug
-                         if(count_sample.gt.1e+6) then
+                         if(count_sample.gt.1e+5) then
                             write(6,*) "give up loop at point 1 ..."
 c                            write(6,*) time-time_init,temp_med,
 c     &                                HQenergy,delta_Ng
