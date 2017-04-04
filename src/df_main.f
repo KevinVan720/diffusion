@@ -707,7 +707,7 @@ c dummy for OSU hydro at the moment
       integer ctl_OSU
       double precision KTfactor,KPfactor,KPTfactor
 
-      double precision dum_D2piT
+      double precision dum_D2piT, p0_lab
       rgau_mean=0d0
       flag_stop=0
 
@@ -818,9 +818,11 @@ c                  endif
                endif  ! calculate beta for Chiho's hydro
 
                if(static.ne.1) then
+                   p0_lab = p_p0(i,j)
                   call rotbos(0d0,0d0,-betax,-betay,-betaz,
      &                 p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j))
-                  deltat_lrf=deltat*sqrt(1d0-betax**2-betay**2-betaz**2)
+! change the deltat in cell frame to lrf
+                  deltat_lrf = p_p0(i,j)/p0_lab * deltat
                else
                   deltat_lrf=deltat
                endif
