@@ -866,16 +866,13 @@ c set transport coefficient if necessary
                   qhat=4.0*alpha/C_F*T**3
 
                else if(qhat_TP.eq.4) then
-                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
-                  if (plength .lt. 0.368) then
-                        plength=0.368d0
+                  D2piT=qhatMin / (1d0 + qhatPower*Log(energ))
+                  if (D2piT .lt. 0.5d0) then
+                        D2piT = 0.5d0
                   endif
-                  D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical)+
-     &      qhatC*(T-Tcut_critical)**2)/Log(1.0+preP*plength**qhatPower)
-!                   D2piT=6.2832d0*(qhatMin+qhatSlope*(T-Tcut_critical))
-!     &                  /Log(qhatC*(1.0+preP*plength**qhatPower))
-                  alpha=6.2832d0/D2piT
-                  qhat = 4d0*alpha/C_F*T**3 ! this is qhat used in code
+                  alpha = 6.2832d0/D2piT
+                  qhat=4.0*alpha/C_F*T**3
+
                else if(qhat_TP .eq. 5) then
 !                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
 !                  dum_D2piT=6.2832d0*(3.0606+19.3082*(T-Tcut_critical))

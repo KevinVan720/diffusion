@@ -3,11 +3,11 @@
 #
 flag_rad..    2       ! Energy loss mechanism: 0-collisional; 1-radiative; 2-both.
 iflav.....    4       ! Flavor of parton to select: 4-charm; 5-beauty.
-qhat_TP...    3       ! 0: constant qhat/T^3
+qhat_TP...    4       ! 0: constant qhat/T^3
                       ! 1: use table of qhat/T^3 as functions of T,p
                       ! 2: use linear parametrization of T only
                       ! 3: use linear parameterization with momentum dependence
-                      ! 4: use poly parameterization with momentum dependence
+                      ! 4: use only momentum dependence
                       ! 5: test test: D2piT=A*(1+B*T^C)
 # 5 parameters of T, p dependent K factors
 KPamp.....    3.0     ! amplitude of P Kactor
@@ -69,7 +69,7 @@ static....    2       ! Choose the type of medium
                       ! 0 - Chiho's hydro, 1 - Static, 2 - OSU hydro
 stat_cool.    0       ! If static=1, stat_cool=1 provides cooling of Bjorken's expansion
 T_static..    0.30    ! If static=1, set medium temperature in GeV here
-tsteps_cut    140     ! Control total timesteps for Langevin evolution 
+tsteps_cut    200     ! Control total timesteps for Langevin evolution 
                       ! (One timestep for 0.1~fm/c)
                       ! Necessary for static=1 and helpful for static=2
 temp_cut..    1       ! 0 for no cut, 1 for cut (necessary for dynamic medium)
