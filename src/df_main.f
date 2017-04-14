@@ -860,9 +860,13 @@ c set transport coefficient if necessary
                   alpha= 6.2832d0/D2piT
                   qhat = 4d0*alpha*T**3/C_F  ! this is qhat used in code
                else if(qhat_TP.eq.3) then  ! linear T and log(E)
-                  D2piT=qhatMin**2*(qhatSlope+T)/(qhatPower+Log(energ))
-                  if (D2piT .lt. 0.1d0) then
-                        D2piT = 0.1d0
+!param13
+                  !D2piT=qhatMin**2*(qhatSlope+T)/(qhatPower+Log(energ))
+!param15           
+                  D2piT = qhatMin*(1d0 + qhatSlope*T/Tcut_critical)/
+     &                          (1d0+ qhatPower * Log(energ))
+                  if (D2piT .lt. 0.5d0) then
+                        D2piT = 0.5d0
                   endif
                   alpha=6.2832d0/D2piT
                   qhat=4.0*alpha/C_F*T**3
