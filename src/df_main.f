@@ -872,7 +872,10 @@ c set transport coefficient if necessary
                   qhat=4.0*alpha/C_F*T**3
 
                else if(qhat_TP.eq.4) then
-                  D2piT=qhatMin / (1d0 + qhatPower*Log(energ))
+!param14
+!                  D2piT=qhatMin / (1d0 + qhatPower*Log(energ))
+!param16
+                  D2piT=qhatMin * (1.d0 + energ**qhatPower)
                   if (D2piT .lt. 0.5d0) then
                         D2piT = 0.5d0
                   endif
