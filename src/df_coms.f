@@ -8,7 +8,7 @@ c     common-blocks:
       
       double precision initt,T_static,alpha,w,Tcut_critical,D2piT
       double precision KFactor,KPamp,KPsig,KTamp,KTsig,preKT
-      double precision qhatMin,qhatSlope,qhatPower,preP,qhatC
+      double precision qhatMin, qhatSlope, qhatPower,preP,qhatC
       double precision TLow,THigh,qhatLow,qhatHigh,qhatA,qhatB
       double precision tmax,x0,xmax,y0,ymax,h0,hmax,tau
       integer pdep_flag,iflav,ref_frame,exp_setup,tsteps_cut
@@ -144,9 +144,9 @@ c parameters/variables for gluon radiation
       double precision max_dNgfnc(t_gn+1,temp_gn,HQener_gn)
 
       double precision HQener_max,t_max,temp_max,temp_min
-      parameter(HQener_max=100.d0)
+      parameter(HQener_max=80.d0)
       parameter(t_max=14.d0)
-      parameter(temp_max=0.65d0)
+      parameter(temp_max=0.55d0)
       parameter(temp_min=0.15d0)
 
       double precision delta_HQener,delta_tg,delta_temp
@@ -174,12 +174,14 @@ c parameters/variables for gluon radiation
       common/rad_debug/cprob_gt1,ctemp_gtmax,ct_gtmax,num_gluon,
      &                 cHQE_gtmax,count_Ecut,Etot_gluon
 
-      integer gamma_nT,gamma_np
-      parameter(gamma_nT=50,gamma_np=7)
-      double precision delta_Te
-      parameter(delta_Te=0.02d0)
-      double precision qhat_over_T3(7:gamma_nT+6,-2:gamma_np+1)
-      common/qhatTP/qhat_over_T3
+
+      integer gamma_nT,gamma_nE
+      parameter(gamma_nT=61,gamma_nE=51)
+      double precision gamma_dT, gamma_dE
+      double precision gamma_TL, gamma_TH, gamma_EL, gamma_EH
+      double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)
+      common/qhatTP/gamma_dT, gamma_dE, gamma_TL, gamma_TH, 
+     &              gamma_EL, gamma_EH, qhat_over_T3
     
 
       

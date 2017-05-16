@@ -7,26 +7,28 @@
       character*10 dummy_c
       integer dummy_n
       double precision dummy_f
-      
-      open(unit=10,file='gamma-table.dat',
-     &        status='old',form='formatted')
 
-      i=7
-      do while(i.le.(gamma_nT+6))
-         j=-2
-         do while(j.le.gamma_np)
-            read(unit=10,fmt=101,err=2098,end=2097)
-     &      dummy_n,dummy_n,dummy_f,dummy_f,dummy_f,qhat_over_T3(i,j)
-c            write(6,*) i,j,qhat_over_T3(i,j)
-            j=j+1
-         enddo
-         qhat_over_T3(i,gamma_np+1)=0d0
-         i=i+1
-      enddo
+      open(unit=15, file='gamma-table.dat',
+     &      status='old')
 
- 101  format(I4,2X,I4,4(2X,D12.6))
+      read(15,*) dummy_c, dummy_c, dummy_c
+      do 2096 j=1, gamma_nE
+        do 2096 i=1, gamma_nT
+            if ((i.eq.1) .and. (j.eq.1)) then
+                read(15,*) gamma_TL, gamma_EL,qhat_over_T3(i,j)
+            else if ((i.eq. gamma_nT) .and. (j.eq.gamma_nE)) then
+                read(15,*) gamma_TH, gamma_EH, qhat_over_T3(i,j)
+            else
+                read(15,*, err=2098,end=2097)
+     &      dummy_f, dummy_f, qhat_over_T3(i,j)
+            endif
+    
+ 2096 continue
+        
+      gamma_dT=(gamma_TH-gamma_TL)/(gamma_nT-1)
+      gamma_dE=(gamma_EH-gamma_EL)/(gamma_nE-1)
 
-      close(10)
+      close(15)
       return
 
  2097 continue
@@ -44,58 +46,49 @@ c            write(6,*) i,j,qhat_over_T3(i,j)
       end subroutine
 
 
-
-ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-      subroutine get_qhat(qhat_value,temperature,momentum)
-
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      subroutine get_qhat(qhat_value, temperature, energy)
+c a subroutine that reads in qhat_over_T3 table and return qhat value
       implicit none
       include 'df_coms.f'
 
-      integer i,j
-      double precision delta_x,delta_y
-      double precision qhat_value,temperature,momentum
-      double precision qhat_j1,qhat_j2
+      integer i, j
+      double precision delta_x, delta_y
+      double precision qhat_value, temperature, energy
+     
+      i = (temperature - gamma_TL)/gamma_dT 
+      j = (energy - gamma_EL)/gamma_dE
+      delta_x = i - int(i)
+      delta_y = j - int(j)
+      i = int(i) + 1
+      j = int(j) + 1
 
-      if(log(momentum).lt.0d0) then
-         j=int(log(momentum))-1
-      else 
-         j=int(log(momentum))
+
+      if (i.lt.1) then
+        i=1
+        delta_x=0
       endif
 
-      i=int(temperature/delta_Te)
-
-      if(i.lt.7.or.i.gt.gamma_nT+6) then
-         write(6,*) "Error: T out of range for qhat!"
-         write(6,*) "Terminating ..."
-         stop
+      if (i.gt.gamma_nT) then
+        i=gamma_nT
+        delta_x=0
       endif
 
-      if(j.lt.-2) j=-2
-      if(j.gt.7) j=7
-
-c interpolate in the x (temperature) direction
-
-      delta_x=temperature-delta_Te*i
-      qhat_j1=qhat_over_T3(i,j)+delta_x/delta_Te*
-     &        (qhat_over_T3(i+1,j)-qhat_over_T3(i,j))
-      qhat_j2=qhat_over_T3(i,j+1)+delta_x/delta_Te*
-     &        (qhat_over_T3(i+1,j+1)-qhat_over_T3(i,j+1))
-
-c interpolate in the y (momentum) direction
-
-      delta_y=log(momentum)-j
-      if(delta_y.lt.0d0) delta_y=0d0
-
-      if(j.eq.7) then
-         qhat_value=qhat_j1
-      else
-         qhat_value=qhat_j1+delta_y*(qhat_j2-qhat_j1)
+      if (j.lt.1) then
+        j=1
+        delta_y=0
       endif
 
-      qhat_value=qhat_value*temperature**3
+      if (j.gt.gamma_nE) then 
+        j=gamma_nE
+        delta_y=0
+      endif
 
+c interpolate gamma_table
+      qhat_value = qhat_over_T3(i,j)*(1-delta_x)*(1-delta_y) 
+     &        + qhat_over_T3(i+1,j)*delta_x*(1-delta_y)
+     &        + qhat_over_T3(i,j+1)*(1-delta_x)*delta_y
+     &        + qhat_over_T3(i+1,j+1)*delta_x*delta_y
       end subroutine
 
-           
 

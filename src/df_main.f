@@ -100,7 +100,7 @@ c     read weights of pT distributions of initial heavy quark
       endif
 
 c     read table for qhat if it depends on T and p
-      if(qhat_TP.eq.1) call read_qhat_table
+      if(qhat_TP.eq.1 .or. qhat_TP.eq.5) call read_qhat_table
 
 c     read table for gluon radiation
       if(flag_rad.ne.0) call read_radTable
@@ -841,10 +841,8 @@ c set transport coefficient if necessary
                   qhat = 4d0*alpha*T**3/C_F
                else if(qhat_TP.eq.1) then   ! pQCD based qhat
                   plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
-                  call get_qhat(qhat,T,plength)  ! this is qhat of HQ
-                                                 ! from pQCD calculation
+                  call get_qhat(qhat,T,energ)  ! this is qhat from pQCD
                   qhat = qhat*KFactor/C_F ! this is qhat in our code
-                                          ! qhat of gluon is CA*qhat
                KPfactor=KPamp*exp(-plength**2/2.0/KPsig/KPsig)
                KTfactor=KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
                KPTfactor = preKT *(1+KPfactor)*(1+KTfactor)
@@ -883,20 +881,17 @@ c set transport coefficient if necessary
                   qhat=4.0*alpha/C_F*T**3
 
                else if(qhat_TP .eq. 5) then
-!                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
-!                  dum_D2piT=6.2832d0*(3.0606+19.3082*(T-Tcut_critical))
-!                  D2piT=6.28320d0*(0.7804+282.1966*(T-Tcut_critical)**2)
-!                  if(dum_D2piT .lt. D2piT) then
-!                      D2piT = dum_D2piT
-!                  endif
-!                D2piT=qhatSlope*D2piT/Log(1.66*(1d0+1.08*plength**2.68))
-!                alpha=6.2832d0/D2piT
-!                qhat=4d0*alpha/C_F*T**3
-      
-                 D2piT=qhatMin*(1d0+qhatSlope*
-     &                 ((T-Tcut_critical)/Tcut_critical)**qhatPower)
-                 if (D2piT .lt. 0.01d0) then
-                        D2piT = 0.01d0
+!param16
+!D2piT=2/pi*arctan(p/qhatPower)*pQCD + 2*pi/arccot(p/qhatPower)*(linear)
+                 call get_qhat(qhat,T,energ) !qhat from pQCD
+                 D2piT = 25.1327d0/qhat
+                 dum_D2piT=qhatMin*(1d0+qhatSlope*T/Tcut_critical)
+                 plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+ p_pz(i,j)**2)
+
+                 D2piT=2/3.14159d0*atan(plength/qhatPower)
+     &                   *(D2piT-dum_D2piT) + dum_D2piT
+                 if (D2piT .lt. 0.2d0) then
+                      D2piT = 0.2d0
                  endif
                  alpha=6.2832d0/D2piT
                  qhat=4d0*alpha/C_F*T**3
