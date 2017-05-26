@@ -888,6 +888,7 @@ c set transport coefficient if necessary
                  dum_D2piT=qhatMin*(1d0+qhatSlope*T/Tcut_critical)
                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+ p_pz(i,j)**2)
 
+                 qhatPower=qhatPower**2
                  D2piT=2/3.14159d0*atan(plength/qhatPower)
      &                   *(D2piT-dum_D2piT) + dum_D2piT
                  if (D2piT .lt. 0.2d0) then
