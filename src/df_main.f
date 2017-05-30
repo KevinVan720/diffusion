@@ -881,16 +881,21 @@ c set transport coefficient if necessary
                   qhat=4.0*alpha/C_F*T**3
 
                else if(qhat_TP .eq. 5) then
-!param16
+!param17
 !D2piT=2/pi*arctan(p/qhatPower)*pQCD + 2*pi/arccot(p/qhatPower)*(linear)
+!param18
+!D2piT=(qhatPower**2*pT)**2/(1+(qhatPower**2*pT)**2) * pQCD +
+!1/(1+(qhatPower**2*pT)**2) * linear
                  call get_qhat(qhat,T,energ) !qhat from pQCD
                  D2piT = 25.1327d0/qhat
-                 dum_D2piT=qhatMin*(1d0+qhatSlope*T/Tcut_critical)
+                 dum_D2piT=qhatMin + qhatSlope*(T/Tcut_critical -1.)
+                 !dum_D2piT=qhatMin*(1d0+qhatSlope*T/Tcut_critical)
                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+ p_pz(i,j)**2)
 
                  qhatPower=qhatPower**2
-                 D2piT=2/3.14159d0*atan(plength/qhatPower)
-     &                   *(D2piT-dum_D2piT) + dum_D2piT
+                 D2piT=(1. -1./(1.+(qhatPower*plength)**2)) * D2piT 
+     &                 + 1./(1.+(qhatPower*plength)**2)* dum_D2piT
+                 
                  if (D2piT .lt. 0.2d0) then
                       D2piT = 0.2d0
                  endif
