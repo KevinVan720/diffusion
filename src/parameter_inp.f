@@ -40,7 +40,7 @@ c diffusion/noise parameters:
 
       qhatMin= 0.2d0
       qhatSlope = 2.0d0
-      qhatPower = 0d0
+      !qhatPower = 0d0
       preP = 1d0     
       qhatC = 0d0
  
@@ -260,9 +260,9 @@ c error-exit
 !      Integer IResult
       Double Precision DResult     
       
-!      write(6, *) "here reading from command line" 
+      write(6, *) "here reading from command line", iargc() 
       QNum = iargc()
-      
+       
       Do ArgIndex = 1, QNum
         call getarg(ArgIndex, buffer)
 !        write(6, *) buffer
@@ -276,6 +276,7 @@ c error-exit
         if (varName .EQ. "qhatmin") qhatMin = DResult   !for linear parameterization
         if (varName .EQ. "qhatslope") qhatSlope = DResult  ! for linear parameterization
         if (varName .EQ. "qhatpower") qhatPower = DResult   ! for linear parameterization
+        write(6,*) qhatMin, qhatSlope, qhatPower
         if (varName .EQ. "prep") preP = DResult
         if (varName .EQ. "qhatc") qhatC = DResult
         if (varName .EQ. "d2pit") then
