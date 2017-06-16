@@ -138,7 +138,7 @@ c parameters/variables for gluon radiation
       integer HQener_gn,t_gn,temp_gn
       parameter (HQener_gn=200)
       parameter (t_gn=70)
-      parameter (temp_gn=100)
+      parameter (temp_gn=120)
 
       double precision dNg_over_dt(t_gn+1,temp_gn,HQener_gn)
       double precision max_dNgfnc(t_gn+1,temp_gn,HQener_gn)
@@ -146,7 +146,7 @@ c parameters/variables for gluon radiation
       double precision HQener_max,t_max,temp_max,temp_min
       parameter(HQener_max=100.d0)
       parameter(t_max=14.d0)
-      parameter(temp_max=0.65d0)
+      parameter(temp_max=0.75d0)
       parameter(temp_min=0.15d0)
 
       double precision delta_HQener,delta_tg,delta_temp
