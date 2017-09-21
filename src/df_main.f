@@ -888,7 +888,7 @@ c set transport coefficient if necessary
 !param18
 !D2piT=(qhatPower**2*pT)**2/(1+(qhatPower**2*pT)**2) * pQCD +
 !1/(1+(qhatPower**2*pT)**2) * linear
-                 call get_qhat(qhat,T,energ) !qhat from pQCD
+                 call get_qhat(qhat,T,energ) !qhat_over_T3 from pQCD
                  D2piT = 25.1327d0/qhat
                  !param18-2 
                  !dum_D2piT=qhatMin + qhatSlope*(T/Tcut_critical -1.)
