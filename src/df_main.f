@@ -83,8 +83,8 @@ c     read file header: (Chiho's hydro)
 
 c     read in OSU hydro
       if(static.eq.2.and.out_skip.ne.0) then
-         call setHydroFilesEZ(1,"JetData.dat",
-     &        2,"JetCtl.dat",1000) 
+!         call setHydroFilesEZ(1,"JetData.dat",2,"JetCtl.dat",1000) 
+         call readHydroFiles_initialEZ("JetData.h5")
 c 1000 is the total buffer size > lifetime / dTau used in hydro output
       endif
 
@@ -758,21 +758,13 @@ c use OSU hydro
             if(static.eq.2) then
 
 c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-tuple
-               call readHydroInfoShanShan(p_r0(i,j),p_rx(i,j),p_ry(i,j)
-     &              ,p_rz(i,j),edensity0,sdensity0,T,
-     &              betax,betay,betaz,ctl_OSU)
+!               call readHydroInfoShanShan(p_r0(i,j),p_rx(i,j),p_ry(i,j)
+!     &              ,p_rz(i,j),edensity0,sdensity0,T,
+!     &              betax,betay,betaz,ctl_OSU)
 
-c debug
-c               if(betax**2+betay**2+betaz**2.gt.1d0) then
-c                  write(6,*) ' ILLEGAL beta!! ',
-c     &                 betax,betay,betaz
-c                  stop
-c               endif
-
-c debug               
-c               write(6,*) p_r0(i,j),p_rx(i,j),p_ry(i,j)
-c     &              ,p_rz(i,j),edensity,sdensity,T,betax,betay,betaz,
-c     &              ctl_OSU
+! use hdf5 file instead
+                call readHydroInfoYingru(p_r0(i,j),p_rx(i,j),p_ry(i,j),
+     &    p_rz(i,j),edensity0,sdensity0,T,betax,betay,betaz,ctl_OSU)
 
                if(temp_cut.ne.1) then
                   write(6,*) "There must be T cut for OSU hydro!"
