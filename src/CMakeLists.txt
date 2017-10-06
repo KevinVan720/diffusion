@@ -12,7 +12,7 @@ add_executable(${PROJECT_NAME}
   )
 
 
-target_link_libraries(${PROJECT_NAME} ${HDF5_FORTRAN_LIB})
+target_link_libraries(${PROJECT_NAME} ${HDF5_Fortran_LIBRARIES})
 
 # install compiled binary
 install (TARGETS ${PROJECT_NAME} DESTINATION ${PROJECT_NAME})
