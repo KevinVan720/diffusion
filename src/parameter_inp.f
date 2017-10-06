@@ -55,7 +55,7 @@ c diffusion/noise parameters:
       qhatHigh=5.5d0
 
 c other paramters:
-      static=2 ! 0-Chiho's hydro, 1-Static, 2-OSU hydro
+      static=2 ! 0-Chiho's hydro, 1-Static, 2-OSU hydro, 3-vhlle 3Dhydro
       tsteps_cut=140
       static_cool=0
       T_static=0.30d0

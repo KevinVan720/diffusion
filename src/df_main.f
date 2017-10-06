@@ -39,11 +39,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    
 c     debug
 
-c     "static" can be:  0 -- Chiho's hydro;
+c     "static" can be:  0 -- Chihos hydro;
 c                       1 -- Static Medium;
 c                       2 -- OSU hydro.
+!                       3 -- vhlle 3D hydro
 
-      if(static.ne.0.and.static.ne.1.and.static.ne.2) then
+      if(static.ne.0.and.static.ne.1.and.
+     &              static.ne.2.and.static.ne.3) then
          write(6,*) "Inappropriate choice for static ..."
          write(6,*) "Terminating ..."
          stop
@@ -67,7 +69,7 @@ c                         2 -- Both collsional and radiative.
 
 c     open hydro file  ccccccccccccccccccccccccccccccccccccccccccccc
 
-c     read file header: (Chiho's hydro)
+c     read file header: (Chihos hydro)
 
       if(static.eq.0.and.out_skip.ne.0) then
          call read_hydroheader(oflag,hflag,geoflag,ioflag)
@@ -84,8 +86,14 @@ c     read file header: (Chiho's hydro)
 c     read in OSU hydro
       if(static.eq.2.and.out_skip.ne.0) then
 !         call setHydroFilesEZ(1,"JetData.dat",2,"JetCtl.dat",1000) 
-         call readHydroFiles_initialEZ("JetData.h5")
+! use hdf5 format with default buffersize = 1000 (you can change it in readin subroutine)
+          call readHydroFiles_initialEZ("JetData.h5")   
 c 1000 is the total buffer size > lifetime / dTau used in hydro output
+      endif
+
+c     read in 3D hydro
+      if(static.eq.3 .and. out_skip.ne. 0) then
+         call readHydroFiles_initial_3D("hydroMedium.h5",1000)
       endif
 
 c     read weights of pT distributions of initial heavy quark
@@ -300,29 +308,33 @@ c initialize cell velocity of hydro medium
 
 c now synchronize particles to 1st time-step
 
-      if(static.eq.2) initt = 0.6d0 ! OSU hydro starts at 0.6~fm/c
+      if(static.eq.2.or.static.eq.3) initt = 0.6d0 ! OSU hydro starts at 0.6~fm/c
+                                                   ! vhlle hydro starts at 0.6fm/c
 
       do 20 i=1,npt
-         do 21 j=1,evsamp
-            deltat=initt-p_r0(i,j)
+        do 21 j=1,evsamp
+          deltat=initt-p_r0(i,j)
 c note: back-propagation is possible here for the particle
 c       freeze-out time being later than the hydro initial
 c       time! Model works best if there is a clear separation
 c       of time-scales between PCM and Hydro...
 
-            energ = p_p0(i,j)
-            p_r0(i,j)  = initt
-            p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
-            p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
-c            p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
-            p_rz(i,j)  = 0d0
-            if(abs(p_rz(i,j)).gt.initt) then
+          energ = p_p0(i,j)
+!          in the case HQ_sample(x,y) at initt, but z need to freestream
+          !p_rx(i,j) = p_rx(i,j) + p_px(i,j)/energ*deltat
+          !p_ry(i,j) = p_ry(i,j) + p_py(i,j)/energ*deltat
+          !p_rz(i,j) = 0d0
+          p_rx(i,j) = p_rx(i,j)
+          p_ry(i,j) = p_ry(i,j)
+          p_rz(i,j) = p_rz(i,j) + p_pz(i,j)/energ*deltat
+ 
+          if(abs(p_rz(i,j)).gt.initt) then
                p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
-            endif
-            p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
-     &                            (p_r0(i,j)-p_rz(i,j)))
+          endif
+          p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
+     &                          (p_r0(i,j)-p_rz(i,j)))
 
-            time_lim(i,j)=initt   ! record time of last interaction
+          time_lim(i,j)=initt   ! record time of last interaction
  21      continue
  20   continue
 
@@ -389,7 +401,7 @@ c variables related to the last radiated gluon -- for tau cut purpose
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-      if(static.eq.1.or.static.eq.2) then
+      if(static.eq.1.or.static.eq.2.or.static.eq.3) then
          ntsteps=tsteps_cut  ! total time steps for Langevin evolution
          tau=0.6d0-0.1d0
       endif
@@ -714,7 +726,7 @@ c dummy for OSU hydro at the moment
 c     set deltat
       deltat = (tmax-initt)/(ntsteps*nlang)
 
-      if(static.eq.1.or.static.eq.2) deltat = 0.1d0/nlang
+      if(static.eq.1.or.static.eq.2.or.static.eq.3) deltat = 0.1d0/nlang
 
       tau_p=tau+deltat*(lstep-1)
 
@@ -779,6 +791,18 @@ c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-
                
             endif ! OSU hydro
 
+! use 3D-hydro
+        if(static.eq.3) then
+           call readHydroInfoYingru_3D(p_r0(i,j),p_rx(i,j),p_ry(i,j),
+     &          p_rz(i,j),T,betax,betay,betaz,ctl_OSU)
+
+                if(ctl_OSU.ne.0 .or. T.lt.Tcut_critical) then
+                    iflag=0
+                    flag_stop=flag_stop+1
+                endif
+            endif
+
+
 
 c do particle diffusion/propagation here...
 
@@ -800,12 +824,12 @@ c boost to local restframe of cell
      &                 /DCOSH(TMP)
                   betaz=(h_veta(ix,iy,iz)+DTANH(h_reta(ix,iy,iz)))/ 
      &                 (1.d0+h_veta(ix,iy,iz)*DTANH(h_reta(ix,iy,iz)))
- 
-c                  if(betax**2+betay**2+betaz**2.gt.1d0) then
-c                     write(6,*) ' ILLEGAL beta!! ',
-c     &                    betax,betay,betaz,h_veta(icell)
-c                     stop
-c                  endif
+
+!                  if(betax**2+betay**2+betaz**2.gt.1d0) then
+!                     write(6,*) ' ILLEGAL beta!! ',
+!     &                    betax,betay,betaz,h_veta(icell)
+!                     stop
+!                  endif
 
                endif  ! calculate beta for Chiho's hydro
 
