@@ -8,8 +8,14 @@
       integer dummy_n
       double precision dummy_f
 
-      open(unit=15, file='gamma-table.dat',
-     &      status='old')
+      if(iflav.eq.4) then
+         open(unit=15,file='gamma-table_charm.dat', status='old')
+      elseif(iflav.eq.5) then
+         open(unit=15,file='gamma-table_bottom.dat', status='old')
+      else
+         write(*,*) "un-recognized heavy quark ID ..."
+         stop
+      endif
 
       read(15,*) dummy_c, dummy_c, dummy_c
       do 2096 j=1, gamma_nE

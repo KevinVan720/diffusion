@@ -44,5 +44,5 @@ set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -fno-align-commons")
 add_subdirectory (src)
 
 # install dependencies
-install (FILES gamma-table.dat parameters_df.dat dNg_over_dt_cD6.dat dNg_over_dt_bD6.dat DESTINATION ${PROJECT_NAME})
+install (FILES gamma-table_charm.dat  gamma-table_bottom.dat parameters_df.dat dNg_over_dt_cD6.dat dNg_over_dt_bD6.dat DESTINATION ${PROJECT_NAME})
 
