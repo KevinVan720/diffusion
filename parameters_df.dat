@@ -1,7 +1,7 @@
 # Please do NOT change any name of the variables, including the symbol "." afterwards
 # Each variable name should take up 10 spaces
 #
-flag_rad..    2       ! Energy loss mechanism: 0-collisional; 1-radiative; 2-both.
+flag_rad..    0       ! Energy loss mechanism: 0-collisional; 1-radiative; 2-both.
 iflav.....    4       ! Flavor of parton to select: 4-charm; 5-beauty.
 qhat_TP...    5       ! 0: constant qhat/T^3
                       ! 1: use table of qhat/T^3 as functions of T,p
@@ -31,10 +31,10 @@ qhatLow...    5.5
 qhatHigh..    5.5
 #
 # Initialization of heavy quarks 
-HQ_input..    3       ! Source of the input file of initial heavy quarks:
-                      ! 1 - read in oscar file;
-                      ! 2 - read in OSU file (initial positions only).
+HQ_input..    4       ! Source of the input file of initial heavy quarks:
+                      ! 0 - read in particles with same momentum
                       ! 3 - read in a list of x-y positions only.
+                      ! 4 - read in PHSD events initial condition
 NUMSAMP...    1       ! number of repeated samples
                       ! only ready for static=2, HQ_input=3
 reweight..    2       ! Re-weight initial momentum distribution:
@@ -65,11 +65,12 @@ ebe_flag..    2       ! Event-by-event study: (must choose 2 when HQ_input is no
 corr_flag.    0       ! 1 for calculation of HF pair correlation
 #
 # Other options for the code
-static....    2       ! Choose the type of medium
-                      ! 0 - Chiho's hydro, 1 - Static, 2 - OSU hydro
+static....    1       ! Choose the type of medium
+                      ! 1 - Static, 2 - OSU hydro
 stat_cool.    0       ! If static=1, stat_cool=1 provides cooling of Bjorken's expansion
 T_static..    0.30    ! If static=1, set medium temperature in GeV here
-tsteps_cut    200     ! Control total timesteps for Langevin evolution 
+p_static..    5       ! If HQ_input=0, set constant p
+tsteps_cut    1       ! Control total timesteps for Langevin evolution 
                       ! (One timestep for 0.1~fm/c)
                       ! Necessary for static=1 and helpful for static=2
 temp_cut..    1       ! 0 for no cut, 1 for cut (necessary for dynamic medium)

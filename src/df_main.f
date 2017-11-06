@@ -1,4 +1,3 @@
-
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
 c     df_main.f version 1.0
@@ -36,14 +35,13 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       call parameterRead
-   
-c     debug
-
-c     "static" can be:  0 -- Chiho's hydro;
+      
+c     "static" can be: 
 c                       1 -- Static Medium;
-c                       2 -- OSU hydro.
+c                       2 -- OSU hydro;
+c                       3 -- PHSD Medium
 
-      if(static.ne.0.and.static.ne.1.and.static.ne.2) then
+      if(static.ne.1.and.static.ne.2.and.static.ne.3) then
          write(6,*) "Inappropriate choice for static ..."
          write(6,*) "Terminating ..."
          stop
@@ -66,27 +64,15 @@ c                         2 -- Both collsional and radiative.
       endif
 
 c     open hydro file  ccccccccccccccccccccccccccccccccccccccccccccc
-
-c     read file header: (Chiho's hydro)
-
-      if(static.eq.0.and.out_skip.ne.0) then
-         call read_hydroheader(oflag,hflag,geoflag,ioflag)
-         if(ioflag.ne.0) then
-            write(6,*) 'terminated at header',ioflag
-            stop
-         endif
-         if(oflag.ne.0) then
-            write(6,*) 'ERROR: wrong file type - need history file'
-            stop
-         endif
-      endif
-
 c     read in OSU hydro
       if(static.eq.2.and.out_skip.ne.0) then
-!         call setHydroFilesEZ(1,"JetData.dat",2,"JetCtl.dat",1000) 
          call readHydroFiles_initialEZ("JetData.h5")
-c 1000 is the total buffer size > lifetime / dTau used in hydro output
       endif
+    
+      if(static.eq.3.and.out_skip.ne.0) then
+         call readPHSD_MediumFile()
+      endif
+
 
 c     read weights of pT distributions of initial heavy quark
       if(reweight.eq.1) then
@@ -101,42 +87,24 @@ c     read weights of pT distributions of initial heavy quark
 
 c     read table for qhat if it depends on T and p
       if(qhat_TP.eq.1 .or. qhat_TP.eq.5) call read_qhat_table
+      if(qhat_TP.eq.6) call read_PHSD_qhat
 
 c     read table for gluon radiation
       if(flag_rad.ne.0) call read_radTable
-
-      if(NUMSAMP.gt.1) then
-         if(static.eq.0) then
-            write(6,*) "Multiple samples is not valid for static=1 yet"
-            write(6,*) "Terminating ..."
-            stop
-c     This can be fixed by moving reading in Chiho's header into 
-c     NUMSAMP loop, not tested yet.
-         endif
-      endif
-
       sampleCount=NUMSAMP
-  
-c     read in initial particles
+ 
 
-      if(HQ_input.eq.1) then ! read from OSCAR file
-         call read_osc_event(iret)
-      elseif(HQ_input.eq.2) then ! read from OSU initial condition
-         if(evsamp.ne.1) then
-            write(*,*) "Please set evsamp to 1"
-            stop
-         endif
-         if(reweight.eq.0) then
-            write(*,*) "Please set reweight to 1 or 2"
-            stop
-         endif
-         call read_OSU_init(iret)
-      elseif(HQ_input.eq.3) then ! read from an x-y position list
+c     read in initial particles
+      if(HQ_input.eq.3) then ! read from an x-y position list
          if(reweight.eq.0) then
             write(*,*) "Please set reweight to 1 or 2"
             stop
          endif
          call read_xy_init(iret)
+      elseif(HQ_input.eq.4) then ! read from PHSD initial condition
+         call read_PHSD_init(iret)
+      elseif(HQ_input.eq.0) then ! read in static initial condition
+         call read_static_init(iret)
       else
          write(*,*) "Wrong value for HQ_input"
          stop
@@ -178,7 +146,6 @@ c     loop over samples cccccccccccccccccccccccccccccccccccccccccccccccc
       dEsum=0d0
       des_cntr=0
       flag_stop=0
-
       pevent=pevent+1
 
       write(6,*)
@@ -187,16 +154,12 @@ c     loop over samples cccccccccccccccccccccccccccccccccccccccccccccccc
       write(6,*)'-> reading PCM event # ',pevent
 
 c     initialize particles' positions
-      if(HQ_input.eq.2.and.sampleCount.ne.NUMSAMP) then
-c         call reSampleXY2
-         write(6,*) "Not ready for HQ_input=2 yet."
-         stop
-      elseif(HQ_input.eq.3.and.sampleCount.ne.NUMSAMP) then
+      if(HQ_input.eq.3.and.sampleCount.ne.NUMSAMP) then
          call reSampleXY3
       endif
 
-cccccccc now filter out particles used for calculation cccccccccccccccc
 
+cccccccc now filter out particles used for calculation cccccccccccccccc
       npt=0
 c debug
       write(6,*) '->  selecting particles'
@@ -218,43 +181,6 @@ c purposes
                p_ry(npt,j)=ry(i)
                p_rz(npt,j)=rz(i)
                if(reweight.ne.0) p_wt(npt,j)=pweight(i)
-
-c rotate the momentum into an arbitrary direction
-               if (rotation.eq.1) then
-                 p_length=sqrt(px(i)**2+py(i)**2+pz(i)**2)
-                 utheta=rlu(0)*2.0-1
-                 phi=rlu(0)*2.0*pi
-                 p_px(npt,j)=p_length*sqrt(1-utheta*utheta)*cos(phi)
-                 p_py(npt,j)=p_length*sqrt(1-utheta*utheta)*sin(phi)
-                 p_pz(npt,j)=p_length*utheta
-                 p_p0(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2+
-     .                p_pz(npt,j)**2+p_mass(npt,j)**2)
-               endif
-c end of rotation
-
-c initial momentum is in the transverse plane with arbitrary direction
-               if (rotation.eq.2) then
-                 p_length=sqrt(px(i)**2+py(i)**2)
-                 phi=rlu(0)*2.0*pi
-                 p_px(npt,j)=p_length*cos(phi)
-                 p_py(npt,j)=p_length*sin(phi)
-                 p_pz(npt,j)=0.0
-                 p_p0(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2+
-     .                p_pz(npt,j)**2+p_mass(npt,j)**2)
-               endif
-c end of rotation
-
-c initial momentum is in the first quadrat of the transverse plane 
-               if (rotation.eq.3) then
-                 p_length=sqrt(px(i)**2+py(i)**2+pz(i)**2)
-                 phi=rlu(0)*0.5*pi
-                 p_px(npt,j)=p_length*cos(phi)
-                 p_py(npt,j)=p_length*sin(phi)
-                 p_pz(npt,j)=0.0
-                 p_p0(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2+
-     .                p_pz(npt,j)**2+p_mass(npt,j)**2)
-               endif
-c end of rotation
 
 c sample initial charms as Moore and Teaney did (with my weight method)
                if (Moore.eq.1) call MTCharm(ityp(i),p_px(npt,j),
@@ -388,22 +314,16 @@ c variables related to the last radiated gluon -- for tau cut purpose
       endif
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
       if(static.eq.1.or.static.eq.2) then
          ntsteps=tsteps_cut  ! total time steps for Langevin evolution
          tau=0.6d0-0.1d0
       endif
 
       do 22 tstep=1,ntsteps        
-         if(static.eq.0) then
-            call read_hydrostep
-         else
-            tau=tau+0.1d0
-         endif
+         tau=tau+0.1d0
          
 c do physics for each time step -- Langevin evolution
          do 32 lstep=1,nlang
-            
             if(flag_stop.ge.npt*evsamp) then
                write(6,*) "Diffusion ends at time step: ", 
      &                    (tstep-1)*nlang+lstep-1
@@ -413,48 +333,41 @@ c do physics for each time step -- Langevin evolution
             call exec_dif
  32      continue
 
-c check number of radiated gluons after each time step
-c         write(6,*) "tstep:",tstep,"flag_stop:",flag_stop
-c         write(6,*) "average gluon number:",1d0*num_gluon/npt/evsamp
-
 c output in time-step loop
 c insert output condition
-c         if(out_skip.ne.1.and.mod(tstep,out_skip).eq.(out_skip-6)) then
-         if(out_skip.ne.1.and.mod(tstep,out_skip).eq.0) then
-c         if(mod(tstep,out_skip).eq.(out_skip-6)) then
-               
-c     or check an exact time-step
+      if(out_skip.ne.1.and.mod(tstep,out_skip).eq.0) then
+c      or check an exact time-step
 c      if(tstep.eq.174) then
 
 c  transform to local rest frame if necessary (determine T from p)
-            if((static.ne.1).and.(ref_frame.eq.2)) then
-               do 34 i=1,npt
-                  do 35 j=1,evsamp
-                     call rotbos(0d0,0d0,-c_vx(i,j),-c_vy(i,j),
-     &                    -c_vz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),
-     &                    p_p0(i,j)) 
- 35               continue
- 34            continue
-            endif
-
-            call output(pevent)
-
-c  transform back to the lab frame
-            if((static.ne.1).and.(ref_frame.eq.2)) then
-               do 36 i=1,npt
-                  do 37 j=1,evsamp
-                     call rotbos(0d0,0d0,c_vx(i,j),c_vy(i,j),c_vz(i,j),
-     &                    p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)) 
- 37               continue
- 36            continue
-            endif
-            
+         if((static.ne.1).and.(ref_frame.eq.2)) then
+           do 34 i=1,npt
+             do 35 j=1,evsamp
+               call rotbos(0d0,0d0,-c_vx(i,j),-c_vy(i,j),
+     &           -c_vz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),
+     &           p_p0(i,j)) 
+ 35          continue
+ 34        continue
          endif
 
+         call output(pevent)
+
+c  transform back to the lab frame
+         if((static.ne.1).and.(ref_frame.eq.2)) then
+           do 36 i=1,npt
+             do 37 j=1,evsamp
+               call rotbos(0d0,0d0,c_vx(i,j),c_vy(i,j),c_vz(i,j),
+     &              p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)) 
+ 37          continue
+ 36        continue
+         endif
+            
+      endif
 c     close timeteps cccccccccccccccccccccccccccccccccccccccccccccccc
 
  22   continue
  23   continue
+
 
 c free-stream particles back to their space-time of last interaction
       do 24 i=1,npt
@@ -502,10 +415,6 @@ c if out_skip is 1, output the last time-step only
          close(30)
       endif
 
-      if(static.eq.0) then
-         close(9)
-      endif
- 
       sampleCount = sampleCount-1
       if(sampleCount.gt.0) goto 3
 
@@ -517,171 +426,6 @@ c if out_skip is 1, output the last time-step only
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     SUBROUTINES
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-c read in Chiho's hydro
-
-      subroutine read_hydroheader(oflag,hflag,geoflag,istat)
-
-      implicit none
-      include 'df_coms.f'
-
-      integer istat,oflag,hflag,geoflag
-      character*170 inputline,file9
-      character*12 dummy,htype,outtype
-
-      istat=0
-
-cformats
- 110  format(3a12)
- 111  format(a80)
- 922  format(i6,6i4)
- 923  format(8f10.3) 
-
-cccccccc
-
-      call getenv('ftn09',file9)
-      if (file9(1:4).ne.'    ') then
-         OPEN(UNIT=9,FILE=file9,STATUS='OLD',FORM='FORMATTED')
-      endif
-
-
-c read & parse 1st line of header
-      read(unit=9,fmt=110,err=98,end=97) dummy,htype,outtype
-      if(dummy.ne.'OSCAR2008H  ') goto 98
-      if(htype.eq.'ideal       ') then
-         hflag=0
-      elseif(htype.eq.'viscous     ') then
-         hflag=1
-      else
-         goto 98
-      endif
-      if(outtype.eq.'history     ') then
-         oflag=0
-      elseif(htype.eq.'final_hs    ') then
-         oflag=1
-      else
-         goto 98
-      endif
-      
-c read subsequent lines:
-
- 3    continue
-      read(unit=9,fmt=111,err=98,end=97) inputline
-
-      if(inputline(1:4).eq.'INIT') goto 3
-      if(inputline(1:3).eq.'EOS') goto 3
-      if(inputline(1:3).eq.'CHA') goto 3
-      if(inputline(1:3).eq.'HYP') goto 3
-      if(inputline(1:3).eq.'GEO') then
-         if(inputline(7:9).eq.'sph') then
-            geoflag=1
-         elseif(inputline(7:15).eq.'scaling2d') then
-            geoflag=2
-         elseif(inputline(7:15).eq.'scaling1d') then
-            geoflag=3
-         elseif(inputline(7:12).eq.'slab1d') then
-            geoflag=4
-         elseif(inputline(7:8).eq.'3d') then
-            geoflag=5
-         elseif(inputline(7:9).eq.'3d-') then
-            geoflag=6
-         endif
-         goto 3
-      endif
-      if(inputline(1:3).eq.'GRI') then
-         if(inputline(7:8).eq.'L') then
-            geoflag=-1*geoflag
-         endif
-         read(unit=9,fmt=922,err=98,end=97) 
-     &        ntsteps,maxx,maxy,maxz,ncharge,ndiss,ncoeff
-         read(unit=9,fmt=923,err=98,end=97)
-     &        initt,tmax,x0,xmax,y0,ymax,h0,hmax
-
-         if(iabs(geoflag).ge.5) then
-            maxn=maxx*maxy*maxz
-         endif
-
-         goto 3
-      endif
-
-      if(inputline(1:3).eq.'VIS') then 
-         goto 3
-      endif
-
-      if(inputline(1:3).eq.'COM') goto 3
-
-      if(inputline(1:3).eq.'END') return
-
-      write(6,*) 'ERROR - unknown line in fileheader: \n',inputline
-
-      stop
-
- 97   continue
-      istat=1
-      write(6,*) 'ERROR: EOF reached in header'
-      return
-
- 98   continue
-      istat=-1
-      write(6,*) 'READ-ERROR in header'
-      return
-
-      end
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-c read in Chiho's hydro
-
-      subroutine read_hydrostep
-
-      implicit none
-      include 'df_coms.f'
-
-      integer icell,ierror,itstp,ix,iy,iz
-      character*20 iline1
-      character*226 iline2
-            
-      write(6,*)
-      write(6,*) '-> reading hydro: timestep # ',tstep
-
-      ierror=0
-
-c     read in timestep
-         do 31 icell=1,maxn
-
-            read(unit=9,fmt=111,err=98,end=97) iline1,iline2
-
- 111        format(a20,a226)
-            read(iline1,fmt=994,err=98,end=97) itstp,ix,iy,iz
-
-            read(iline2,fmt=995,err=97,end=98)
-     &           tau,h_rx(ix,iy,iz),h_ry(ix,iy,iz),h_reta(ix,iy,iz),
-     &           ener(ix,iy,iz),press(ix,iy,iz),temp(ix,iy,iz),
-     &           h_rqgp(ix,iy,iz),h_vx(ix,iy,iz),h_vy(ix,iy,iz),
-     &           h_veta(ix,iy,iz),nb(ix,iy,iz),mu(ix,iy,iz)
-
- 31      continue
-
- 994     format(4i5)
- 995     format(4D24.16,2F11.4,2F9.4,3D24.16,2F11.6)
-
-         return
-
- 97   continue
-      ierror=1
-      write(6,*) 'ERROR: EOF reached in timestep ',tstep
-      return
-
- 98   continue
-      ierror=-1
-      write(6,*) 'READ-ERROR in timestep ',tstep
-      return
-
-      end
-
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
 c most important subroutine -- do Langevin evolution
 
       subroutine exec_dif
@@ -697,8 +441,9 @@ c most important subroutine -- do Langevin evolution
       double precision dkpx_gluon,dkpy_gluon,width_gluon,tau_f
       double precision dkT_gluon,plength
 c      double precision kT_dum
-      double precision rgau_mean,rgau_width(3),rgau,kappa_d,kappa_t,
-     &                 kappa_l
+c      double precision rgau_mean,rgau_width(3),rgau,kappa_d,kappa_t,
+c     &                 kappa_l
+      double precision rgau_mean, rgau_width(3), rgau
       double precision xi_gauss(3),T,v_x,v_y,v_z,v2,e_old,xi(3)
       double precision theta,phi,rr,dum
       double precision lim_low,lim_high,lim_int,max_Ng,deltat_lrf
@@ -713,14 +458,8 @@ c dummy for OSU hydro at the moment
 
 c     set deltat
       deltat = (tmax-initt)/(ntsteps*nlang)
-
       if(static.eq.1.or.static.eq.2) deltat = 0.1d0/nlang
-
       tau_p=tau+deltat*(lstep-1)
-
-c debug
-c      write(6,*) 'taup ',tau_p,tau,deltat,lstep
-c      write(6,*)    '    time                        : ',tau_p
 
       if(static.eq.1) then
          T=T_static
@@ -728,40 +467,16 @@ c      write(6,*)    '    time                        : ',tau_p
          if(static_cool.eq.1) then
             T=T_static*(tau_p/initt)**(-1d0/3d0)
          endif
-         write(6,*) '    infinite matter, temperature: ',T
+         !write(6,*) '    infinite matter, temperature: ',T
       endif 
 
       do 10 i=1,npt
          do 11 j=1,evsamp
-
             iflag=1
-            
-            if(static.eq.0) then
-               call r_to_cell(ix,iy,iz,p_rx(i,j),p_ry(i,j),p_reta(i,j)
-     &              ,iflag)
-
-c               write(6,*) ' processing particle# ',i,j
-
-               if(iflag.ne.0) then
-                  T=temp(ix,iy,iz)
-                  if(T.lt.0.001) T=0.001 !in case some flaws exist in hydro
-               else
-                  T=0.001
-                  write(6,*) '  particle out of medium!'
-               endif
-
-               if((temp_cut.eq.1).and.(T.lt.Tcut_critical)) iflag=0
-
-            endif               ! static.eq.0
-
 c use OSU hydro
             if(static.eq.2) then
 
 c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-tuple
-!               call readHydroInfoShanShan(p_r0(i,j),p_rx(i,j),p_ry(i,j)
-!     &              ,p_rz(i,j),edensity0,sdensity0,T,
-!     &              betax,betay,betaz,ctl_OSU)
-
 ! use hdf5 file instead
                 call readHydroInfoYingru(p_r0(i,j),p_rx(i,j),p_ry(i,j),
      &    p_rz(i,j),edensity0,sdensity0,T,betax,betay,betaz,ctl_OSU)
@@ -776,148 +491,80 @@ c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-
                   iflag=0
                   flag_stop=flag_stop+1
                endif
-               
             endif ! OSU hydro
 
 
 c do particle diffusion/propagation here...
-
             if(static.eq.1.or.iflag.ne.0) then
 
 c update the time of the last interaction
-               time_lim(i,j) = p_r0(i,j)+deltat 
-
-               if(static.eq.0) then
-
-c boost to local restframe of cell
-
-                  TMP=0.5d0*dLOG((1+h_veta(ix,iy,iz))/
-     &                 (1-h_veta(ix,iy,iz)))+h_reta(ix,iy,iz)
-
-                  betax=h_vx(ix,iy,iz)*DCOSH(TMP-h_reta(ix,iy,iz))
-     &                 /DCOSH(TMP)
-                  betay=h_vy(ix,iy,iz)*DCOSH(TMP-h_reta(ix,iy,iz))
-     &                 /DCOSH(TMP)
-                  betaz=(h_veta(ix,iy,iz)+DTANH(h_reta(ix,iy,iz)))/ 
-     &                 (1.d0+h_veta(ix,iy,iz)*DTANH(h_reta(ix,iy,iz)))
- 
-c                  if(betax**2+betay**2+betaz**2.gt.1d0) then
-c                     write(6,*) ' ILLEGAL beta!! ',
-c     &                    betax,betay,betaz,h_veta(icell)
-c                     stop
-c                  endif
-
-               endif  ! calculate beta for Chiho's hydro
-
-               if(static.ne.1) then
-                   p0_lab = p_p0(i,j)
-                  call rotbos(0d0,0d0,-betax,-betay,-betaz,
-     &                 p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j))
+              time_lim(i,j) = p_r0(i,j)+deltat 
+              if(static.ne.1) then
+                p0_lab = p_p0(i,j)
+                call rotbos(0d0,0d0,-betax,-betay,-betaz,
+     &          p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j))
 ! change the deltat in cell frame to lrf
-                  deltat_lrf = p_p0(i,j)/p0_lab * deltat
-               else
-                  deltat_lrf=deltat
-               endif
+                deltat_lrf = p_p0(i,j)/p0_lab * deltat
+              else
+                deltat_lrf=deltat
+              endif
                
-               energ = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
+              energ = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
      &                      +p_mass(i,j)**2)
-               e_old=energ
+              e_old=energ
 
-               if(init_int(i,j).eq.0) then
-                  init_int(i,j)=1           ! start first interaction
-                  Tinteval_lrf(i,j)=0d0     ! for gluon radiation
-               endif
+              if(init_int(i,j).eq.0) then
+                init_int(i,j)=1           ! start first interaction
+                Tinteval_lrf(i,j)=0d0     ! for gluon radiation
+              endif
 
 c set transport coefficient if necessary
-               if(qhat_TP.eq.0) then        ! a constant D2piT
-                  qhat = 4d0*alpha*T**3/C_F
-               else if(qhat_TP.eq.1) then   ! pQCD based qhat
-                  plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
-                  call get_qhat(qhat,T,energ)  ! this is qhat from pQCD
-                  qhat = qhat*KFactor/C_F ! this is qhat in our code
-               KPfactor=KPamp*exp(-plength**2/2.0/KPsig/KPsig)
-               KTfactor=KTamp*exp(-(T-Tcut_critical)**2/2.0/KTsig/KTsig)
-               KPTfactor = preKT *(1+KPfactor)*(1+KTfactor)
-               qhat = qhat*preKT*(1+KPfactor)*(1+KTfactor)
-
-                  alpha = qhat*C_F/4d0/T**3
-                  D2piT = 6.2832d0/alpha
-               else if(qhat_TP.eq.2) then  ! linear parameterization 
-                  D2piT= qhatMin+qhatSlope*(T-Tcut_critical)
-                  if (D2piT .lt. 0.1d0) then
-                      D2piT = 0.1d0
-                  endif
-                  alpha= 6.2832d0/D2piT
-                  qhat = 4d0*alpha*T**3/C_F  ! this is qhat used in code
-               else if(qhat_TP.eq.3) then  ! linear T and log(E)
-!param13
-                  !D2piT=qhatMin**2*(qhatSlope+T)/(qhatPower+Log(energ))
-!param15           
-                  D2piT = qhatMin*(1d0 + qhatSlope*T/Tcut_critical)/
-     &                          (1d0+ qhatPower * Log(energ))
-                  if (D2piT .lt. 0.5d0) then
-                        D2piT = 0.5d0
-                  endif
-                  alpha=6.2832d0/D2piT
-                  qhat=4.0*alpha/C_F*T**3
-
-!                  write(6,*) qhatMin, qhatSlope, qhatPower
-
-               else if(qhat_TP.eq.4) then
-!param14
-!                  D2piT=qhatMin / (1d0 + qhatPower*Log(energ))
-!param16
-                  D2piT=qhatMin * (1.d0 + energ**qhatPower)
-                  if (D2piT .lt. 0.5d0) then
-                        D2piT = 0.5d0
-                  endif
-                  alpha = 6.2832d0/D2piT
-                  qhat=4.0*alpha/C_F*T**3
-
-               else if(qhat_TP .eq. 5) then
-!param17
-!D2piT=2/pi*arctan(p/qhatPower)*pQCD + 2*pi/arccot(p/qhatPower)*(linear)
+            if(qhat_TP.eq.0) then
+              qhat = 4d0*alpha*T**3/C_F  ! a constant D2piT
+            else if (qhat_TP.eq.5) then
+              call get_qhat(qhat,T,energ)  !qhat_over_T3
+              D2piT=25.1327d0/qhat
+              dum_D2piT=qhatMin*(1d0+qhatSlope*(T/Tcut_critical-1d0))
+              plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
 !param18
 !D2piT=(qhatPower**2*pT)**2/(1+(qhatPower**2*pT)**2) * pQCD +
 !1/(1+(qhatPower**2*pT)**2) * linear
-                 call get_qhat(qhat,T,energ) !qhat_over_T3 from pQCD
-                 D2piT = 25.1327d0/qhat
-                 !param18-2 
-                 !dum_D2piT=qhatMin + qhatSlope*(T/Tcut_critical -1.)
-                 !param18 
-                 dum_D2piT=qhatMin*(1d0+qhatSlope*(T/Tcut_critical-1.))
-                 
-                 plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+ p_pz(i,j)**2)
+              plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+ p_pz(i,j)**2)
+              D2piT=(1d0-1d0/(1d0+((qhatPower**2)*plength)**2))*D2piT 
+     &        + 1d0/(1d0+((qhatPower**2)*plength)**2)*dum_D2piT
 
+              if (D2piT .lt. 0.1d0) then
+                D2piT = 0.1d0
+              endif
 
-               D2piT=(1d0-1d0/(1d0+((qhatPower**2)*plength)**2))*D2piT 
-     &         + 1d0/(1d0+((qhatPower**2)*plength)**2)*dum_D2piT
+              alpha=6.2832d0/D2piT
+              qhat=4d0*alpha/C_F*T**3
+            else if (qhat_TP.eq.6) then
+              plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
+              call get_PHSD_qhat(kappa_d,kappa_l,kappa_t,T,plength)
+              D2piT=25.13727d0/(2*kappa_t/ T**3)
+              alpha=6.2832d0/D2piT
+              qhat=4d0*alpha/C_F*T**3
 
-                if (D2piT .lt. 0.1d0) then
-                     D2piT = 0.1d0
-                endif
-
-!                 write(6,*) dum_D2piT, D2piT
-                 alpha=6.2832d0/D2piT
-                 qhat=4d0*alpha/C_F*T**3
-
-               else
-                  write(6,*) "Wrong value for qhat_TP."
-                  write(6,*) "Terminating ..."
-               endif
+!              !write(6,*) "read in PHSD diffusion coefficient: " ,T
+              write(6,*) T
+     &                   ,plength,kappa_d,kappa_l,kappa_t 
+            else
+              write(6,*) "Wrong value for qhat_TP."
+              write(6,*) "Terminating ..."
+            endif
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c for gluon radiation
 
 c whether multiple gluon radiation is allowed
                
-               if(flag_rad.ne.0) then
-                  HQenergy=energ
-                  HQmass=p_mass(i,j)
-                  temp_med=T
-                  Tinteval_lrf(i,j)=Tinteval_lrf(i,j)+deltat_lrf
-                  time_gluon=Tinteval_lrf(i,j)
-
+            if(flag_rad.ne.0) then
+              HQenergy=energ
+              HQmass=p_mass(i,j)
+              temp_med=T
+              Tinteval_lrf(i,j)=Tinteval_lrf(i,j)+deltat_lrf
+              time_gluon=Tinteval_lrf(i,j)
 c if tau_p or T is larger than the corresponding maximum value in 
 c the dNg_over_dt table, report error
 c                  if(time-time_init.gt.t_max) then
@@ -927,365 +574,329 @@ c                     ct_gtmax=ct_gtmax+1
 c                     time=t_max+time_init
 c                  endif
 
-                  if(time_gluon.gt.t_max) then
-                     write(30,*) 'accumulated time exceeds t_max'
-                     write(30,*) tau_p,time_gluon,temp_med,HQenergy
-                     ct_gtmax=ct_gtmax+1
-                     time_gluon=t_max
-                  endif
+              if(time_gluon.gt.t_max) then
+                write(30,*) 'accumulated time exceeds t_max'
+                write(30,*) tau_p,time_gluon,temp_med,HQenergy
+                ct_gtmax=ct_gtmax+1
+                time_gluon=t_max
+              endif
 
-                  if(temp_med.gt.temp_max) then
-                     write(30,*) 'temperature exceeds temp_max'
-                     write(30,*) tau_p,temp_med,HQenergy
-                     ctemp_gtmax=ctemp_gtmax+1
-                     temp_med=temp_max
-                  endif
+              if(temp_med.gt.temp_max) then
+                write(30,*) 'temperature exceeds temp_max'
+                write(30,*) tau_p,temp_med,HQenergy
+                ctemp_gtmax=ctemp_gtmax+1
+                temp_med=temp_max
+              endif
 
-                  if(HQenergy.gt.HQener_max) then
-                     write(30,*) 'HQenergy exceeds HQener_max'
-                     write(30,*) tau_p,temp_med,HQenergy
-                     cHQE_gtmax=cHQE_gtmax+1
-                     HQenergy=HQener_max
-                  endif
+              if(HQenergy.gt.HQener_max) then
+                write(30,*) 'HQenergy exceeds HQener_max'
+                write(30,*) tau_p,temp_med,HQenergy
+                cHQE_gtmax=cHQE_gtmax+1
+                HQenergy=HQener_max
+              endif
 
-                  if(temp_med.lt.temp_min) then
-                     write(6,*) 'temperature drops below temp_min'
-                     write(6,*) 'terminating ...'
-                     stop
-                  endif
+              if(temp_med.lt.temp_min) then
+                write(6,*) 'temperature drops below temp_min'
+                write(6,*) 'terminating ...'
+                stop
+              endif
 
-c judge whether to read in the dNg_over_dt table for the next time step
-c                  do while((time-time_init-time_tg).gt.delta_tg/2.d0)
-c                     rad_read=0
-c                     call read_radTable(rad_read)
-c                     if(rad_read.eq.-1.or.rad_read.eq.1) stop
-c                  enddo
-c                  write(6,*)    '    time in dNg_over_dt table   : ',
-c     &                 time_tg
- 
-c                  write(6,*) 'i,j,fgluon(i,j): ',i,j,fgluon(i,j)
+              time_num=int(time_gluon/delta_tg+0.5d0)+1
+              temp_num=int((temp_med-temp_min)/delta_temp+0.5d0)
+              HQenergy_num=int(HQenergy/delta_HQener+0.5d0)
+              delta_Ng=dNg_over_dt(time_num,temp_num,HQenergy_num)
+     &                *6d0/D2piT
+              max_Ng=max_dNgfnc(time_num,temp_num,HQenergy_num)
+     &                *6d0/D2piT
 
-c                  time_num=int((time-time_init)/delta_tg+0.5d0)+1
-
-                  time_num=int(time_gluon/delta_tg+0.5d0)+1
-                  temp_num=int((temp_med-temp_min)/delta_temp+0.5d0)
-                  HQenergy_num=int(HQenergy/delta_HQener+0.5d0)
-                  delta_Ng=dNg_over_dt(time_num,temp_num,HQenergy_num)
-     &                     *6d0/D2piT
-                  max_Ng=max_dNgfnc(time_num,temp_num,HQenergy_num)
-     &                   *6d0/D2piT
-
-!                  if(qhat_TP.eq.1) delta_Ng=delta_Ng*KTfactor
+!             if(qhat_TP.eq.1) delta_Ng=delta_Ng*KTfactor
 ! by yingru, second parameterization: (let us not to rescale alpha_s this time)
 
-
-c                  write(6,*) temp_num,HQenergy_num,delta_Ng
-
-                  if(delta_Ng*deltat_lrf.gt.1.d0) then
-                     write(30,*) 'gluon emission probability exceeds 1'
-                     write(30,*) tau_p,time_gluon,temp_med,HQenergy,
-     &                           delta_Ng*deltat_lrf
-                     cprob_gt1=cprob_gt1+1
-                  endif
+              if(delta_Ng*deltat_lrf.gt.1.d0) then
+                write(30,*) 'gluon emission probability exceeds 1'
+                write(30,*) tau_p,time_gluon,temp_med,HQenergy,
+     &                      delta_Ng*deltat_lrf
+                cprob_gt1=cprob_gt1+1
+              endif
 
 c check whether gluon emission is allowed for HQ at this energy
-                  lim_low = PI*temp_med/HQenergy
-                  lim_high = 1.d0
-                  lim_int = lim_high-lim_low
+              lim_low = PI*temp_med/HQenergy
+              lim_high = 1.d0
+              lim_int = lim_high-lim_low
 
-                  if(lim_int.gt.EPS.and.
-c     &               Tinteval_lrf(i,j).gt.lastG_tau(i,j).and. ! tau cut
-     &               rlu(0).lt.delta_Ng*deltat_lrf-EPS.and.
-     &               2d0*HQenergy*(HQenergy-PI*temp_med).gt.HQmass**2 
-     &               +EPS) then
+              if(lim_int.gt.EPS.and.
+     &           rlu(0).lt.(delta_Ng*deltat_lrf-EPS).and.
+     &           2d0*HQenergy*(HQenergy-PI*temp_med).gt.HQmass**2
+     &           +EPS) then
 c a gluon might be emitted
 c random(1) corresponds to x, and random(2) corresponds to y
-                     random(1)=lim_low+lim_int*rlu(0)
-                     random(2)=rlu(0)
-                     do while(tau_f(random(1),random(2)).lt.
-     &                        1d0/PI/temp_med)   
-                         random(1)=lim_low+lim_int*rlu(0)
-                         random(2)=rlu(0)
-                     enddo
+                random(1)=lim_low+lim_int*rlu(0)
+                random(2)=rlu(0)
+                do while(tau_f(random(1),random(2)).lt.1d0/PI/temp_med)
+                  random(1)=lim_low+lim_int*rlu(0)
+                  random(2)=rlu(0)
+                enddo
  
-                     count_sample=0
-                     do while(max_Ng*rlu(0).gt.
-     &                     dNg_over_dxdydt(random(1),random(2)))
-                         count_sample=count_sample+1
+                count_sample=0
+                do while(max_Ng*rlu(0).gt.
+     &                  dNg_over_dxdydt(random(1),random(2)))
+                  count_sample=count_sample+1
 c debug
-                         if(count_sample.gt.1e+5) then
-                            write(6,*) "give up loop at point 1 ..."
-c                            write(6,*) time-time_init,temp_med,
-c     &                                HQenergy,delta_Ng
-                            write(6,*) tau_p,time_gluon,temp_med,
-     &                                 HQenergy,delta_Ng
-                            kpx_gluon=0d0
-                            kpy_gluon=0d0
-                            klong_gluon=0d0
-                            goto 3312
-                         endif
+                  if(count_sample.gt.1e+5) then
+                    write(6,*) "give up loop at point 1 ..."
+c                   write(6,*) tau_p,time_gluon,temp_med,HQenergy,delta_Ng
+                    kpx_gluon=0d0
+                    kpy_gluon=0d0
+                    klong_gluon=0d0
+                    goto 3312
+                  endif
  
-                         random(1)=lim_low+lim_int*rlu(0)
-                         random(2)=rlu(0)
-                         do while(tau_f(random(1),random(2)).lt.
-     &                           1d0/PI/temp_med)   
-                            random(1)=lim_low+lim_int*rlu(0)
-                            random(2)=rlu(0)
-                         enddo
+                  random(1)=lim_low+lim_int*rlu(0)
+                  random(2)=rlu(0)
+                  do while(tau_f(random(1),random(2)).lt.
+     &              1d0/PI/temp_med)   
+                    random(1)=lim_low+lim_int*rlu(0)
+                    random(2)=rlu(0)
+                  enddo
  
-                     enddo
+                enddo
 
-                     theta_gluon=2d0*PI*rlu(0)
-                     kperp_gluon=random(1)*random(2)*HQenergy
-                     kpx_gluon=kperp_gluon*cos(theta_gluon)
-                     kpy_gluon=kperp_gluon*sin(theta_gluon)
-                     klong_gluon=random(1)*HQenergy*
-     &                    sqrt(1d0-random(2)*random(2))
+                theta_gluon=2d0*PI*rlu(0)
+                kperp_gluon=random(1)*random(2)*HQenergy
+                kpx_gluon=kperp_gluon*cos(theta_gluon)
+                kpy_gluon=kperp_gluon*sin(theta_gluon)
+                klong_gluon=random(1)*HQenergy*
+     &               sqrt(1d0-random(2)*random(2))
 
 c throw away collinear gluon or gluon that disobays kT ordering
-c                     if(kperp_gluon.gt.previous_kT(i,j)) then
-c                    if(kperp_gluon.lt.sqrt(2d0/3d0)*PI*temp_med) then
-c                        kpx_gluon=0d0
-c                        kpy_gluon=0d0
-c                        klong_gluon=0d0
-c                        count_Ecut=count_Ecut+1
-c                        goto 3312
-c                     endif
+c             if(kperp_gluon.gt.previous_kT(i,j)) then
+c               if(kperp_gluon.lt.sqrt(2d0/3d0)*PI*temp_med) then
+c                 kpx_gluon=0d0
+c                 kpy_gluon=0d0
+c                 klong_gluon=0d0
+c                 count_Ecut=count_Ecut+1
+c                 goto 3312
+c               endif
 
-c                     kT_dum = kperp_gluon
+c               kT_dum = kperp_gluon
 
 c for checking purpose, four ways to remove the momentum broadening of gluons
 
-                     if(narrow.eq.1) then
-                        kpx_gluon=0.d0
-                        kpy_gluon=0.d0
-                     endif
-
-                     if(narrow.eq.3) then
-                        width_gluon=sqrt(N_c*qhat*
-     &                        tau_f(random(1),random(2))/2.d0)
- 3310                   continue
-                        dkpx_gluon=rgau(0,0.d0,width_gluon)
-                        dkpy_gluon=rgau(0,0.d0,width_gluon)
-                        dkT_gluon=sqrt(dkpx_gluon**2+dkpy_gluon**2)
-                        if(dkT_gluon.gt.kperp_gluon) goto 3310
-                        kperp_gluon=sqrt(kperp_gluon**2-dkT_gluon**2)
-                        theta_gluon=2*PI*rlu(0)
-                        kpx_gluon=kperp_gluon*cos(theta_gluon)
-                        kpy_gluon=kperp_gluon*sin(theta_gluon)     
-                     endif
-
-                     if(narrow.eq.4) then
-                        count_sample=0
-                        width_gluon=sqrt(N_c*qhat*
-     &                        tau_f(random(1),random(2))/2.d0)
- 3311                   continue
-                        dkpx_gluon=rgau(0,0.d0,width_gluon)
-                        dkpy_gluon=rgau(0,0.d0,width_gluon)
-                        dkT_gluon=sqrt(dkpx_gluon**2+dkpy_gluon**2)
-
-                        if(dkT_gluon.gt.kperp_gluon.or.
-     &                    dkpx_gluon**2+dkpy_gluon**2
-     &                    -2*dkpx_gluon*kpx_gluon-2*dkpy_gluon*kpy_gluon
-     &                    .gt.0.d0) then
-                           count_sample=count_sample+1
-c debug
-                           if(count_sample.gt.1e+6) then
-                              write(6,*) "give up loop at point2: " 
-                              write(6,*) kpx_gluon,
-     &                                   kpy_gluon,width_gluon
-                              goto 3313
-                           endif
-
-                           goto 3311
-                        endif
-
-                        kpx_gluon=kpx_gluon-dkpx_gluon
-                        kpy_gluon=kpy_gluon-dkpy_gluon
-                     endif
-
- 3313 continue
-                     call getang(p_px(i,j),p_py(i,j),p_pz(i,j),
-     &                    theta,phi,rr)
-c rotate gluon momentum:
-                     call rotbos(theta,phi,0d0,0d0,0d0,
-     &                    kpx_gluon,kpy_gluon,klong_gluon,dum)
-
-c gluon energy cannot exceed HQ kinetic energy
-                     if(kpx_gluon**2+kpy_gluon**2+klong_gluon**2.gt.
-     &                    (HQenergy-HQmass)**2) then
-                        kpx_gluon=0.d0
-                        kpy_gluon=0.d0
-                        klong_gluon=0.d0
-                        count_Ecut=count_Ecut+1
-                     else
-c this gluon is valid
-                        fgluon(i,j)=fgluon(i,j)+1
-                        num_gluon=num_gluon+1
-c                        t_init(i,j)=tau_p
-                        Tinteval_lrf(i,j)=0d0
-c                        previous_kT(i,j)=kT_dum
-                        Etot_gluon=Etot_gluon+random(1)*HQenergy
-                        lastG_px(i,j)=kpx_gluon
-                        lastG_py(i,j)=kpy_gluon
-                        lastG_pz(i,j)=klong_gluon
-                        lastG_tau(i,j)=tau_f(random(1),random(2))*
-     &                                 inv_fm_to_GeV
-                     endif
-
-                  else
-c no gluon emission in this time step 
-                     kpx_gluon=0.d0
-                     kpy_gluon=0.d0
-                     klong_gluon=0.d0
-                  endif
-
-               else
+                if(narrow.eq.1) then
                   kpx_gluon=0.d0
                   kpy_gluon=0.d0
-                  klong_gluon=0.d0
+                endif
+
+                if(narrow.eq.3) then
+                  width_gluon=sqrt(N_c*qhat*
+     &                  tau_f(random(1),random(2))/2.d0)
+ 3310 continue
+                  dkpx_gluon=rgau(0,0.d0,width_gluon)
+                  dkpy_gluon=rgau(0,0.d0,width_gluon)
+                  dkT_gluon=sqrt(dkpx_gluon**2+dkpy_gluon**2)
+
+                  if(dkT_gluon.gt.kperp_gluon) goto 3310
+
+                  kperp_gluon=sqrt(kperp_gluon**2-dkT_gluon**2)
+                  theta_gluon=2*PI*rlu(0)
+                  kpx_gluon=kperp_gluon*cos(theta_gluon)
+                  kpy_gluon=kperp_gluon*sin(theta_gluon)     
+                endif
+
+                if(narrow.eq.4) then
+                  count_sample=0
+                  width_gluon=sqrt(N_c*qhat*
+     &              tau_f(random(1),random(2))/2.d0)
+ 3311 continue
+                  dkpx_gluon=rgau(0,0.d0,width_gluon)
+                  dkpy_gluon=rgau(0,0.d0,width_gluon)
+                  dkT_gluon=sqrt(dkpx_gluon**2+dkpy_gluon**2)
+                  if(dkT_gluon.gt.kperp_gluon.or.
+     &               dkpx_gluon**2+dkpy_gluon**2
+     &               -2*dkpx_gluon*kpx_gluon-2*dkpy_gluon*kpy_gluon
+     &               .gt.0.d0) then
+                    count_sample=count_sample+1
+c debug
+                  if(count_sample.gt.1e+6) then
+                     write(6,*) "give up loop at point2: " 
+                     write(6,*) kpx_gluon,kpy_gluon,width_gluon
+                     goto 3313
+                   endif
+
+                   goto 3311
+                 endif
+
+                 kpx_gluon=kpx_gluon-dkpx_gluon
+                 kpy_gluon=kpy_gluon-dkpy_gluon
                endif
 
- 3312          continue
+ 3313 continue
+               call getang(p_px(i,j),p_py(i,j),p_pz(i,j),
+     &                    theta,phi,rr)
+c rotate gluon momentum:
+               call rotbos(theta,phi,0d0,0d0,0d0,
+     &              kpx_gluon,kpy_gluon,klong_gluon,dum)
+
+c gluon energy cannot exceed HQ kinetic energy
+               if(kpx_gluon**2+kpy_gluon**2+klong_gluon**2.gt.
+     &            (HQenergy-HQmass)**2) then
+                 kpx_gluon=0.d0
+                 kpy_gluon=0.d0
+                 klong_gluon=0.d0
+                 count_Ecut=count_Ecut+1
+               else
+c this gluon is valid
+                 fgluon(i,j)=fgluon(i,j)+1
+                 num_gluon=num_gluon+1
+c                t_init(i,j)=tau_p
+                 Tinteval_lrf(i,j)=0d0
+c                previous_kT(i,j)=kT_dum
+                 Etot_gluon=Etot_gluon+random(1)*HQenergy
+                 lastG_px(i,j)=kpx_gluon
+                 lastG_py(i,j)=kpy_gluon
+                 lastG_pz(i,j)=klong_gluon
+                 lastG_tau(i,j)=tau_f(random(1),random(2))*inv_fm_to_GeV
+               endif
+
+             else
+c no gluon emission in this time step 
+               kpx_gluon=0.d0
+               kpy_gluon=0.d0
+               klong_gluon=0.d0
+             endif
+
+           else
+             kpx_gluon=0.d0
+             kpy_gluon=0.d0
+             klong_gluon=0.d0
+           endif
+
+ 3312 continue
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c the following part is for collisional energy loss
 
-               if(flag_rad.ne.1) then
+           if(flag_rad.ne.1) then
+             v_x = p_px(i,j)/energ 
+             v_y = p_py(i,j)/energ 
+             v_z = p_pz(i,j)/energ
 
-                  v_x = p_px(i,j)/energ 
-                  v_y = p_py(i,j)/energ 
-                  v_z = p_pz(i,j)/energ
-
-                  v2 = v_x**2 + v_y**2 + v_z**2
+             v2 = v_x**2 + v_y**2 + v_z**2
 
 c debug
-                  v2 = min(0.9999999,v2)
+             v2 = min(0.9999999,v2)
 
 c     get paramters for noise calculation:
-                  kappa_d=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
-                  kappa_l=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
-                  kappa_t=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
+             if(qhat_TP.ne.6) then
+               kappa_d=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
+               kappa_l=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
+               kappa_t=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
+             endif
                
-                  if(pdep_flag.eq.1) then
-                     kappa_t = kappa_t/sqrt(1d0-v2)
-                     kappa_l = kappa_l/(1d0-v2)
+             if(pdep_flag.eq.1) then
+               kappa_t = kappa_t/sqrt(1d0-v2)
+               kappa_l = kappa_l/(1d0-v2)
+               kappa_d = 2*T* kappa_d*(1d0/(2d0*T*(1d0-v2)) 
+     &                           - (1d0+v2-sqrt(1d0-v2))/
+     &                           (p_mass(i,j)*v2*sqrt(1d0-v2)))
+             endif
 
-                     kappa_d = 2*T* kappa_d*(1d0/(2d0*T*(1d0-v2)) 
-     &                               - (1d0+v2-sqrt(1d0-v2))/
-     &                                 (p_mass(i,j)*v2*sqrt(1d0-v2)))
-                  endif
 
-
-                  rgau_width(1)=sqrt(kappa_t/deltat_lrf)
-                  rgau_width(2)=sqrt(kappa_t/deltat_lrf)
-                  rgau_width(3)=sqrt(kappa_l/deltat_lrf)
+             rgau_width(1)=sqrt(kappa_t/deltat_lrf)
+             rgau_width(2)=sqrt(kappa_t/deltat_lrf)
+             rgau_width(3)=sqrt(kappa_l/deltat_lrf)
 
 c This generation of noise is originally at the end of the subroutine
 c generate new noise
-                  do k=1,3
-                     xi_gauss(k)=rgau(0,rgau_mean,rgau_width(k))
-                  enddo
+             do k=1,3
+               xi_gauss(k)=rgau(0,rgau_mean,rgau_width(k))
+             enddo
 
 c get angles
-                  call getang(p_px(i,j),p_py(i,j),p_pz(i,j),
-     &                        theta,phi,rr)
+             call getang(p_px(i,j),p_py(i,j),p_pz(i,j),theta,phi,rr)
 
 c rotate xi_gauss to particle axis:
-                  call rotbos(theta,phi,0d0,0d0,0d0,
-     &                     xi_gauss(1),xi_gauss(2),xi_gauss(3),dum)
+             call rotbos(theta,phi,0d0,0d0,0d0,
+     &            xi_gauss(1),xi_gauss(2),xi_gauss(3),dum)
 
 c update noise
 
-                  xi_x(i,j) = w*xi_gauss(1) + (1-w)*xi_x(i,j)
-                  xi_y(i,j) = w*xi_gauss(2) + (1-w)*xi_y(i,j)
-                  xi_z(i,j) = w*xi_gauss(3) + (1-w)*xi_z(i,j)
+             xi_x(i,j) = w*xi_gauss(1) + (1-w)*xi_x(i,j)
+             xi_y(i,j) = w*xi_gauss(2) + (1-w)*xi_y(i,j)
+             xi_z(i,j) = w*xi_gauss(3) + (1-w)*xi_z(i,j)
 c end of generation of noise
 
 c special case: initialize noise for zeroth time-step:
-                  if((tstep.eq.1).and.(lstep.eq.1)) then
-                     rgau_width(1)=sqrt(kappa_t*w/((2d0-w)*deltat_lrf))
-                     rgau_width(2)=sqrt(kappa_t*w/((2d0-w)*deltat_lrf))
-                     rgau_width(3)=sqrt(kappa_l*w/((2d0-w)*deltat_lrf))
-
-c                  write(6,*) ' -> intializing noise ',i,j
-c                  write(6,*) '     alpha,kappa,rgau : ',alpha,kappa,
-c     &                    rgau_width
-
+             if((tstep.eq.1).and.(lstep.eq.1)) then
+               rgau_width(1)=sqrt(kappa_t*w/((2d0-w)*deltat_lrf))
+               rgau_width(2)=sqrt(kappa_t*w/((2d0-w)*deltat_lrf))
+               rgau_width(3)=sqrt(kappa_l*w/((2d0-w)*deltat_lrf))
 
 c these have to be oriented along the particle axis of motion
-                     xi(1)=rgau(0,rgau_mean,rgau_width(1))
-                     xi(2)=rgau(0,rgau_mean,rgau_width(2))
-                     xi(3)=rgau(0,rgau_mean,rgau_width(3))
+               xi(1)=rgau(0,rgau_mean,rgau_width(1))
+               xi(2)=rgau(0,rgau_mean,rgau_width(2))
+               xi(3)=rgau(0,rgau_mean,rgau_width(3))
 
 c rotate xi's to particle axis:
 
 c     get angles
-                     call getang(p_px(i,j),p_py(i,j),p_pz(i,j),
-     &                        theta,phi,rr)
+               call getang(p_px(i,j),p_py(i,j),p_pz(i,j),
+     &              theta,phi,rr)
 
 c rotate xi's:
-                     call rotbos(theta,phi,0d0,0d0,0d0,
-     &                        xi(1),xi(2),xi(3),dum)
+               call rotbos(theta,phi,0d0,0d0,0d0,
+     &              xi(1),xi(2),xi(3),dum)
 
-                     xi_x(i,j)=xi(1)
-                     xi_y(i,j)=xi(2)
-                     xi_z(i,j)=xi(3)
+               xi_x(i,j)=xi(1)
+               xi_y(i,j)=xi(2)
+               xi_z(i,j)=xi(3)
 
 c initialize v_bar's and kv/T at zero time-step
 
-                     p_vbx(i,j)=(2d0-w)/(2d0*w) * v_x * kappa_d/T
-                     p_vby(i,j)=(2d0-w)/(2d0*w) * v_y * kappa_d/T
-                     p_vbz(i,j)=(2d0-w)/(2d0*w) * v_z * kappa_d/T
+               p_vbx(i,j)=(2d0-w)/(2d0*w) * v_x * kappa_d/T
+               p_vby(i,j)=(2d0-w)/(2d0*w) * v_y * kappa_d/T
+               p_vbz(i,j)=(2d0-w)/(2d0*w) * v_z * kappa_d/T
 
-                     p_kvtx(i,j)= kappa_d*v_x/T
-                     p_kvty(i,j)= kappa_d*v_y/T
-                     p_kvtz(i,j)= kappa_d*v_z/T
+               p_kvtx(i,j)= kappa_d*v_x/T
+               p_kvty(i,j)= kappa_d*v_y/T
+               p_kvtz(i,j)= kappa_d*v_z/T
 c end initialization
-
-                  else ! for normal time steps
+             else ! for normal time steps
 c update v^bar's:
-                     p_vbx(i,j) = 0.5d0*p_px(i,j)/p_p0(i,j) *kappa_d/T
-     &                      + (1d0-w)*(0.5d0*p_kvtx(i,j) + p_vbx(i,j))
-                     p_vby(i,j) = 0.5d0*p_py(i,j)/p_p0(i,j) *kappa_d/T
-     &                      + (1d0-w)*(0.5d0*p_kvty(i,j) + p_vby(i,j))
-                     p_vbz(i,j) = 0.5d0*p_pz(i,j)/p_p0(i,j) *kappa_d/T
-     &                      + (1d0-w)*(0.5d0*p_kvtz(i,j) + p_vbz(i,j))
+               p_vbx(i,j) = 0.5d0*p_px(i,j)/p_p0(i,j) *kappa_d/T
+     &                 + (1d0-w)*(0.5d0*p_kvtx(i,j) + p_vbx(i,j))
+               p_vby(i,j) = 0.5d0*p_py(i,j)/p_p0(i,j) *kappa_d/T
+     &                 + (1d0-w)*(0.5d0*p_kvty(i,j) + p_vby(i,j))
+               p_vbz(i,j) = 0.5d0*p_pz(i,j)/p_p0(i,j) *kappa_d/T
+     &                 + (1d0-w)*(0.5d0*p_kvtz(i,j) + p_vbz(i,j))
 c store v*kappa/T, to serve as "old" value in next time-step
-                     p_kvtx(i,j) = p_px(i,j)/p_p0(i,j) * kappa_d/T
-                     p_kvty(i,j) = p_py(i,j)/p_p0(i,j) * kappa_d/T
-                     p_kvtz(i,j) = p_pz(i,j)/p_p0(i,j) * kappa_d/T
+               p_kvtx(i,j) = p_px(i,j)/p_p0(i,j) * kappa_d/T
+               p_kvty(i,j) = p_py(i,j)/p_p0(i,j) * kappa_d/T
+               p_kvtz(i,j) = p_pz(i,j)/p_p0(i,j) * kappa_d/T
 
-                  endif ! end calculation of drag term
+             endif ! end calculation of drag term
 
-               endif              
+           endif              
 
 c update momenta (combine radiation and collision):
 
-               if(flag_rad.eq.1) then ! only radiative energy loss
+           if(flag_rad.eq.1) then ! only radiative energy loss
+             p_px(i,j)  = p_px(i,j) - kpx_gluon 
+             p_py(i,j)  = p_py(i,j) - kpy_gluon
+             p_pz(i,j)  = p_pz(i,j) - klong_gluon
 
-                  p_px(i,j)  = p_px(i,j) - kpx_gluon 
-                  p_py(i,j)  = p_py(i,j) - kpy_gluon
-                  p_pz(i,j)  = p_pz(i,j) - klong_gluon
-
-               else             ! combine collisional and radiative
-
-                  p_px(i,j)  = p_px(i,j) - kpx_gluon 
-     &                         - p_vbx(i,j)*deltat_lrf
-     &                         + xi_x(i,j)*deltat_lrf
-
-                  p_py(i,j)  = p_py(i,j) - kpy_gluon
-     &                         - p_vby(i,j)*deltat_lrf
-     &                         + xi_y(i,j)*deltat_lrf
-
-                  p_pz(i,j)  = p_pz(i,j) - klong_gluon
-     &                         - p_vbz(i,j)*deltat_lrf
-     &                         + xi_z(i,j)*deltat_lrf
-               endif
+           else             ! combine collisional and radiative
+             p_px(i,j) = p_px(i,j) - kpx_gluon - p_vbx(i,j)*deltat_lrf
+     &                   + xi_x(i,j)*deltat_lrf
+             p_py(i,j) = p_py(i,j) - kpy_gluon - p_vby(i,j)*deltat_lrf
+     &                   + xi_y(i,j)*deltat_lrf
+             p_pz(i,j) = p_pz(i,j) - klong_gluon - p_vbz(i,j)*deltat_lrf
+     &                   + xi_z(i,j)*deltat_lrf
+           endif
 
 c update energy
-               p_p0(i,j)  = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
-     &                      +p_mass(i,j)**2)
+           p_p0(i,j)  = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
+     &                +p_mass(i,j)**2)
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c reset momentum and energy to the initial value
@@ -1298,66 +909,44 @@ c$$$               p_p0(i,j)=p_ip0(i,j)
 c$$$               
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-               dEsum=dEsum+(p_p0(i,j)-e_old)**2
-               des_cntr=des_cntr+1
-
+           dEsum=dEsum+(p_p0(i,j)-e_old)**2
+           des_cntr=des_cntr+1
 c boost back into computational frame
 
-               if(static.ne.1) then
-                  call rotbos(0d0,0d0,betax,betay,betaz,
-     &                 p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j))
-               endif            ! static.ne.1
-               
+           if(static.ne.1) then
+             call rotbos(0d0,0d0,betax,betay,betaz,
+     &       p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j))
+           endif            ! static.ne.1
 c record cell information, the last interaction will be kept
-               Thydro(i,j)=T
-               edensity(i,j)=edensity0
-               sdensity(i,j)=sdensity0
-               if(static.ne.1) then
-                  c_vx(i,j)=betax
-                  c_vy(i,j)=betay
-                  c_vz(i,j)=betaz
-               endif
- 
-            endif               ! particle in medium
+           Thydro(i,j)=T
+           edensity(i,j)=edensity0
+           sdensity(i,j)=sdensity0
+           if(static.ne.1) then
+             c_vx(i,j)=betax
+             c_vy(i,j)=betay
+             c_vz(i,j)=betaz
+           endif
+         endif               ! particle in medium
       
 c propagate particle:
-            energ    = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
-     &                      +p_mass(i,j)**2)
-            p_p0(i,j)= energ
-
-            p_r0(i,j)  = tau_p+deltat
-            p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
-            p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
-            p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
+         energ = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
+     &            +p_mass(i,j)**2)
+         p_p0(i,j)= energ
+         p_r0(i,j)  = tau_p+deltat
+         p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
+         p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
+         p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
 
 
 c debug
-            if(abs(p_rz(i,j)).gt.tau_p+deltat) then
-
-               write(6,*) ' tachyon scaled! ',p_rz(i,j),
-     &                     tau_p,p_pz(i,j)/energ
-
-               p_rz(i,j)=sign(tau_p+deltat-1d-10,p_rz(i,j))
-               write(6,*) ' new rz ',p_rz(i,j) 
-            endif
-
-            p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
-     &                           (p_r0(i,j)-p_rz(i,j)))
-
-
-c store the information of cell temperature and velocity:            
-c            Thydro(i,j)=T
-
-c if no else, the cell information of the last interaction is recorded
-c            if((static.ne.1).and.(iflag.ne.0)) then
-c               c_vx(i,j)=betax
-c               c_vy(i,j)=betay
-c               c_vz(i,j)=betaz
-c            else
-c               c_vx(i,j)=0d0
-c               c_vy(i,j)=0d0
-c               c_vz(i,j)=0d0
-c            endif
+         if(abs(p_rz(i,j)).gt.tau_p+deltat) then
+           write(6,*) ' tachyon scaled! ',p_rz(i,j),
+     &                  tau_p,p_pz(i,j)/energ
+          p_rz(i,j)=sign(tau_p+deltat-1d-10,p_rz(i,j))
+          write(6,*) ' new rz ',p_rz(i,j) 
+        endif
+        p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
+     &              (p_r0(i,j)-p_rz(i,j)))
 
  11      continue
  10   continue
@@ -1366,409 +955,10 @@ c      write(6,*)    '    time in dNg_over_dt table   : ', time_tg
 
       return
       end
+
+
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-c find the postion of HQ in Chiho's hydro
-
-      subroutine r_to_cell(ix,iy,iz,x,y,eta,iflag)
-
-c     calculates cell index for a given set of coordinates x,y,eta
-c     - returns icell=0 in case of (x,y,eta) being out of bounds 
-
-      implicit none
-      include 'df_coms.f'
-
-      double precision x,y,eta
-      integer iflag
-      integer ix,iy,iz,ixf,iyf,izf
-      integer icc
-
-      iflag=1
-      
-      ixf=-1
-      iyf=-1
-      izf=-1
-      
-      if((h_rx(0,0,0).gt.x).or.(h_ry(0,0,0).gt.y)
-     &     .or.(h_reta(0,0,0).gt.eta)) then
-         iflag=0
-         return
-      endif
-
-      if((h_rx(maxx-1,maxy-1,maxz-1).lt.x)
-     &     .or.(h_ry(maxx-1,maxy-1,maxz-1).lt.y)
-     &     .or.(h_reta(maxx-1,maxy-1,maxz-1).lt.eta)) then
-         iflag=0
-         return
-      endif
-
-      ix=0
-      iy=0
-      iz=0
-
-      icc=0
-
- 102  continue
-
-      icc=icc+1
-
-      if(icc.gt.14) then
-         write(6,*) 'trouble in r_to_cell: icc = ',icc
-         write(6,*) x,y,eta
-         stop
-      endif
-c      write(6,*) ' testing ',ix,iy,iz
-c--------------------------------------------------------------------------
-
-
-c center block:
-               if((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x).and.
-     &            (h_ry(ix,iy,iz).le.y.and.h_ry(ix,iy+1,iz).gt.y).and.
-     &            (h_reta(ix,iy,iz).le.eta.and.
-     &     h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix
-                  iyf=iy
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c right neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c right-top neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy+1
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c right-bottom neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &            (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy-1
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c bottom neighbour
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix
-                  iyf=iy-1
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c top neighbour
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix
-                  iyf=iy+1
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c left top neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy+1
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c left neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c left bottom neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz).le.eta
-     &                 .and.h_reta(ix,iy,iz+1).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy-1
-                  izf=iz
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front center block:
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix
-                  iyf=iy
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front right neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front right-top neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy+1
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front right-bottom neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy-1
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front bottom neighbour
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix
-                  iyf=iy-1
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front top neighbour
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix
-                  iyf=iy+1
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front left top neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy+1
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front left neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c front left bottom neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz+1).le.eta
-     &                 .and.h_reta(ix,iy,iz+2).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy-1
-                  izf=iz+1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back center block:
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta.
-     &                 and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix
-                  iyf=iy
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back right neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back right-top neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy+1
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back right-bottom neighbour
-               elseif((h_rx(ix+1,iy,iz).le.x.and.h_rx(ix+2,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix+1
-                  iyf=iy-1
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back bottom neighbour
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix
-                  iyf=iy-1
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back top neighbour
-               elseif((h_rx(ix,iy,iz).le.x.and.h_rx(ix+1,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix
-                  iyf=iy+1
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back left top neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy+1,iz).le.y
-     &                 .and.h_ry(ix,iy+2,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy+1
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back left neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy,iz).le.y
-     &                 .and.h_ry(ix,iy+1,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-c back left bottom neighbour
-               elseif((h_rx(ix-1,iy,iz).le.x.and.h_rx(ix,iy,iz).gt.x)
-     &                 .and.(h_ry(ix,iy-1,iz).le.y
-     &                 .and.h_ry(ix,iy,iz).gt.y).and.
-     &                 (h_reta(ix,iy,iz-1).le.eta
-     &                 .and.h_reta(ix,iy,iz).gt.eta))then
-                  ixf=ix-1
-                  iyf=iy-1
-                  izf=iz-1
-c                  write(6,*) 'found! ',ixf,iyf,izf
-                  goto 101
-
-
-
-               endif
-c--------------------------------------------------------------------------
-
-c             write(6,*) 'p   ',x,y,eta
-c             write(6,*) 'c   ',h_rx(ix,iy,iz),h_ry(ix,iy,iz),h_reta(ix,iy,iz)
-c             write(6,*) 'c+1 ',h_rx(ix+1,iy,iz),h_ry(ix,iy+1,iz),h_reta(ix,iy,iz+1)
-
-c               if(h_rx(ix+1,iy,iz).le.x) then
-c                  ix=min(maxx-1,ix+max(1,int(((maxx-1)-ix)/2.0)))
-c               elseif(h_rx(ix,iy,iz).gt.x) then
-c                  ix=max(0,ix-max(1,int(ix/2.0)))
-c               endif
-
-
-               if(h_rx(ix+1,iy,iz).le.x) then
-                  ix=min(maxx-1,ix+max(1,(maxx/(2**icc))))
-               elseif(h_rx(ix,iy,iz).gt.x) then
-                  ix=max(0,ix-max(1,(maxx/(2**icc))))
-               endif
-
-               if(h_ry(ix,iy+1,iz).le.y) then
-                  iy=min(maxy-1,iy+max(1,(maxy/(2**icc))))
-               elseif(h_ry(ix,iy,iz).gt.y) then
-                  iy=max(0,iy-max(1,(maxy/(2**icc))))
-               endif
-
-               if(h_reta(ix,iy,iz+1).le.eta) then
-                  iz=min(maxz-1,iz+max(1,(maxz/(2**icc))))
-               elseif(h_reta(ix,iy,iz).gt.eta) then
-                  iz=max(0,iz-max(1,(maxz/(2**icc))))
-               endif
-
-               goto 102
-
-c===============================
-
- 101  continue
-
-
-      if(ixf.eq.-1.or.iyf.eq.-1.or.izf.eq.-1) then
-         iflag=0
-c         write(6,*) 'r_to_cell : out of bounds!'
-c         stop
-      endif
-      
-      return
-      end
-
+c           subroutine
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
@@ -2150,7 +1340,6 @@ c generate initial table
       entry reSampleXY3
 
       numPart=0
-
       if(iflav.eq.4) then ! c quark
          mass=cMass
       elseif(iflav.eq.5) then ! b quark
@@ -2158,7 +1347,6 @@ c generate initial table
       endif
 
       do while (numPart.lt.npart)
-
          numPart = numPart+1
          index_xy = int(rlu(0)*numXY)+1
          if(index_xy.gt.numXY) index_xy = numXY
@@ -2188,9 +1376,6 @@ c now its anti-particle (if consider pair production)
          endif
 
       enddo
-
-c      write(6,*) rx(1),rx(2),rx(3),rx(npart),rx(npart+1)
-
       return
 
  2204 continue
@@ -2198,135 +1383,6 @@ c      write(6,*) rx(1),rx(2),rx(3),rx(npart),rx(npart+1)
       write(6,*) 'terminating ...'
       stop
       return
-
-      end
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-      subroutine read_OSU_init(iret)
-
-      implicit none
-      include 'df_coms.f'
-      include 'ucoms.f'
-
-      double precision dummy1,dummy2,dummy7,dummy9,dummy10,dummy11
-      double precision dummy12,dummy13,dummy14
-      double precision angle_Re,angle_Im,impact_b,center_x,center_y
-      double precision rx0,ry0
-      double precision rlu
-      integer n_part,n_bin
-      integer iret,i,j
-      double precision sigma_HQ,mass
-
-      iret=1
-
-      OPEN(UNIT=13,FILE='sn_ecc_eccp_2_event_1.dat',
-     &     STATUS='OLD',FORM='FORMATTED')
-      OPEN(UNIT=14,FILE='BinaryCollisionTable_event_1.dat',
-     &     STATUS='OLD',FORM='FORMATTED')
-
-      read(unit=13,fmt=*,err=2196,end=2195) dummy1,dummy2,angle_Re,
-     &    angle_Im,n_part,n_bin,dummy7,impact_b,dummy9,dummy10,
-     &    dummy11,dummy12,dummy13,dummy14,center_x,center_y
-
-      if(exp_setup.eq.1) then ! LHC 2.76~TeV
-         sigma_pptot = 61.3564d0
-         Ap = 208
-         Zp = 82
-         At = 208
-         Zt = 82
-         ecm = 2760d0
-      elseif(exp_setup.eq.2) then ! RHIC 200~GeV
-         sigma_pptot = 41.9357d0
-         Ap = 197
-         Zp = 79
-         At = 197
-         Zt = 79
-         ecm = 200d0
-      else
-         write(*,*) "Unexpected experimental setup ..."
-         write(*,*) "Terminating ..."
-         stop
-      endif
-
-      if(iflav.eq.4) then ! c quark
-         sigma_HQ = sigma_ctot
-         mass = cMass
-      elseif(iflav.eq.5) then ! b quark
-         sigma_HQ = sigma_btot
-         mass = bMass
-      else
-         write(*,*) "Unexpected id of heavy quark ..."
-         write(*,*) "Terminating ..."
-         stop
-      endif
-
-      bimp = impact_b
-
-      i=1
-      j=1
-      do while(i.le.n_bin)
-         read(unit=14,fmt=*,err=2196,end=2195) rx0,ry0
-         if(rlu(0).lt.sigma_HQ/sigma_pptot) then ! a QQbar pair is produced
-            ityp(j) = iflav
-            rx(j) = rx0
-            ry(j) = ry0
-            rz(j) = 0d0
-            r0(j) = 0.6d0
-            fmass(j) = mass
-            call pQCDwt(ityp(j),px(j),py(j),pz(j),p0(j),fmass(j),
-     &                 pweight(j))
-c now its anti-particle
-            ityp(j+1) = -ityp(j)
-            px(j+1) = -px(j)
-            py(j+1) = -py(j)
-            pz(j+1) = -pz(j)
-            p0(j+1) = p0(j)
-            fmass(j+1) = fmass(j)
-            rx(j+1) =  rx(j)
-            ry(j+1) =  ry(j)
-            rz(j+1) =  rz(j)
-            r0(j+1) =  r0(j)
-            pweight(j+1) = pweight(j)
-            j=j+2
-         endif
-         i=i+1
-      enddo 
-
-      npart = j-1
-
-      par_plane_phi = DATAN2(angle_Im,angle_Re)
-      if(par_plane_phi.lt.0d0) par_plane_phi = 2d0*PI + par_plane_phi 
-      par_plane_phi = par_plane_phi/2d0
-
-      write(*,*) "particle #:",npart,"angle:",par_plane_phi/PI*180d0
-      write(*,*) "center position:",center_x,center_y
-
-      if(ebe_flag.eq.0) then ! traslate and rotate for smooth initial condition
-         j=1
-         do while(j.le.npart)
-            rx(j) = rx(j)-center_x
-            ry(j) = ry(j)-center_y
-            call rot2D(-par_plane_phi,rx(j),ry(j))
-            call rot2D(-par_plane_phi,px(j),py(j))
-            j = j+1
-         enddo
-      endif 
-
-      return
-
- 2195 continue
-      iret=0
-      write(6,*) 'ERROR: EOF reached in the superMC table'
-      write(6,*) 'terminating ...'
-      return
-
- 2196 continue
-      iret=-1
-      write(6,*) 'READ-ERROR in the superMC table'
-      write(6,*) 'terminating ...'
-      return
-
       end
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc

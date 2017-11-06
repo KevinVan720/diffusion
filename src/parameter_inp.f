@@ -59,6 +59,7 @@ c other paramters:
       tsteps_cut=140
       static_cool=0
       T_static=0.30d0
+      p_static=30d0
       temp_cut=1 ! 0 for no cut, 1 for cut
       Tcut_critical=0.165d0
       wt_num=140 ! only meaningful for reweight=1
@@ -159,6 +160,8 @@ c xx: treat line as end of input marker
             read(inputstr,fmt=*,err=88,end=88) static_cool
          CASE ("T_static..")
             read(inputstr,fmt=*,err=88,end=88) T_static
+         CASE ("p_static..")
+            read(inputstr,fmt=*,err=88,end=88) p_static
          CASE ("temp_cut..")
             read(inputstr,fmt=*,err=88,end=88) temp_cut
          CASE ("Tcut......")
@@ -229,6 +232,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          write(6,*) "static: ",static
          write(6,*) "static_cool: ",static_cool
          write(6,*) "T_static: ",T_static
+         write(6,*) "p_static: ", p_static
          write(6,*) "tsteps_cut: ",tsteps_cut 
          write(6,*) "temp_cut: ",temp_cut
          write(6,*) "Tcut_critical: ",Tcut_critical
@@ -279,6 +283,7 @@ c error-exit
         write(6,*) qhatMin, qhatSlope, qhatPower
         if (varName .EQ. "prep") preP = DResult
         if (varName .EQ. "qhatc") qhatC = DResult
+        if (varName .EQ. "p_static") p_static=DResult
         if (varName .EQ. "d2pit") then
                 D2piT = DResult
                 alpha = 6.2832d0/D2piT

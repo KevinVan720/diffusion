@@ -7,6 +7,8 @@ c     common-blocks:
      &        rotation,temp_cut,qhat_TP
       
       double precision initt,T_static,alpha,w,Tcut_critical,D2piT
+      double precision kappa_d, kappa_t, kappa_l
+      double precision p_static
       double precision KFactor,KPamp,KPsig,KTamp,KTsig,preKT
       double precision qhatMin, qhatSlope, qhatPower,preP,qhatC
       double precision TLow,THigh,qhatLow,qhatHigh,qhatA,qhatB
@@ -40,10 +42,11 @@ c set number of Langevin steps within hydro step
       common/userFlag/reweight,iflav,out_skip,corr_flag,HQ_input,
      &                ebe_flag,exp_setup
       common/diffusionConst/D2piT,alpha,KFactor,
+     &                kappa_d, kappa_t, kappa_l,
      &                TLow,THigh,qhatLow,qhatHigh,qhatA,qhatB,
      &                KTamp,KTsig,KPamp,KPsig,preKT,
      &                qhatMin,qhatSlope,qhatPower,preP,qhatC
-      common/otherFlag1/static,static_cool,T_static,
+      common/otherFlag1/static,static_cool,T_static, p_static,
      &                  temp_cut,wt_num,tsteps_cut,num_binary,qhat_TP
       common/otherFlag2/Tcut_critical,wt_int,wt_Tab_min
 
@@ -115,9 +118,12 @@ c set number of Langevin steps within hydro step
       parameter(inv_fm_to_GeV=0.1973d0)
 
       integer numXY,NUMSAMP
-      double precision initX(mxpart),initY(mxpart) 
+      double precision initX(mxpart),initY(mxpart),initZ(mxpart)
+      double precision initZ0(mxpart),initPX(mxpart),initPY(mxpart)
+      double precision initPZ(mxpart),initE0(mxpart)
       common/initXY1/numXY,NUMSAMP
-      common/initXY2/initX,initY      
+      common/initXY2/initX,initY,initZ,initZ0,
+     &              initPX,initPY,initPZ,initE0
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c parameters/variables for gluon radiation
@@ -180,8 +186,11 @@ c parameters/variables for gluon radiation
       double precision gamma_dT, gamma_dE
       double precision gamma_TL, gamma_TH, gamma_EL, gamma_EH
       double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)
+      double precision PHSD_A(1:60,1:101),PHSD_BL(1:60,1:101),
+     &                 PHSD_BT(1:60, 1:101)
       common/qhatTP/gamma_dT, gamma_dE, gamma_TL, gamma_TH, 
-     &              gamma_EL, gamma_EH, qhat_over_T3
-    
-
+     &              gamma_EL, gamma_EH, qhat_over_T3,
+     &              PHSD_A, PHSD_BL, PHSD_BT
+      integer PHSD_nT, PHSD_nE
+      parameter(PHSD_nT=60, PHSD_nE=101)
       
