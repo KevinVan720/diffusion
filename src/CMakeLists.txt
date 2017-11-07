@@ -9,6 +9,7 @@ add_executable(${PROJECT_NAME}
   rad_inp.f  
   qhat.f
   PHSD_event.f
+  hydro_3d_hdf5.for
   )
 
 target_link_libraries(${PROJECT_NAME} ${HDF5_Fortran_LIBRARIES})

@@ -39,7 +39,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     "static" can be: 
 c                       1 -- Static Medium;
 c                       2 -- OSU hydro;
-c                       3 -- PHSD Medium
+c                       3 -- 3D medium (hydro, PHSD)
 
       if(static.ne.1.and.static.ne.2.and.static.ne.3) then
          write(6,*) "Inappropriate choice for static ..."
@@ -68,9 +68,9 @@ c     read in OSU hydro
       if(static.eq.2.and.out_skip.ne.0) then
          call readHydroFiles_initialEZ("JetData.h5")
       endif
-    
+   
       if(static.eq.3.and.out_skip.ne.0) then
-         call readPHSD_MediumFile()
+          call readHydroFiles_initial_3D("PHSD_medium.h5", 1000)
       endif
 
 
@@ -227,7 +227,6 @@ c initialize cell velocity of hydro medium
 c now synchronize particles to 1st time-step
 
       if(static.eq.2) initt = 0.6d0 ! OSU hydro starts at 0.6~fm/c
-
       do 20 i=1,npt
          do 21 j=1,evsamp
             deltat=initt-p_r0(i,j)
@@ -237,20 +236,42 @@ c       time! Model works best if there is a clear separation
 c       of time-scales between PCM and Hydro...
 
             energ = p_p0(i,j)
-            p_r0(i,j)  = initt
-            p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
-            p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
+! in the case of 3D HQ initialization            
+!            p_r0(i,j)  = initt
+!            p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
+!            p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
 c            p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
-            p_rz(i,j)  = 0d0
+!            p_rz(i,j)  = 0d0
+
+             p_r0(i,j) = initt
+             p_rx(i,j) = p_rx(i,j) + p_pz(i,j)/energ*deltat
+             p_ry(i,j) = p_ry(i,j) + p_pz(i,j)/energ*deltat
+             p_rz(i,j) = p_rz(i,j) + p_pz(i,j)/energ*deltat
+
             if(abs(p_rz(i,j)).gt.initt) then
                p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
             endif
             p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
      &                            (p_r0(i,j)-p_rz(i,j)))
-
             time_lim(i,j)=initt   ! record time of last interaction
  21      continue
  20   continue
+
+      if(static.eq.3) initt=0.0d0 ! PHSD medium starts at 0.6
+      do 261 i=1, npt
+        do 262 j=1, evsamp
+          energ=p_p0(i,j)
+          if (p_r0(i,j).lt.p_rz(i,j)) then
+            p_reta(i,j) = 0d0
+          else
+            p_reta(i,j) = 0.5d0*log((p_r0(i,j)+p_rz(i,j))/
+     &                              (p_r0(i,j)-p_rz(i,j)))
+          endif
+          time_lim(i,j) = p_r0(i,j)
+
+ 262    continue
+ 261    continue
+
 
 cdebug
       write(6,*) '-> ', npt,' particles initialized for calculation'
@@ -317,6 +338,9 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       if(static.eq.1.or.static.eq.2) then
          ntsteps=tsteps_cut  ! total time steps for Langevin evolution
          tau=0.6d0-0.1d0
+      else if (static.eq.3) then  
+         ntsteps = tsteps_cut
+         tau=0.0-0.1d0  ! PHSD hydro starts from 0 tau
       endif
 
       do 22 tstep=1,ntsteps        
@@ -333,6 +357,9 @@ c do physics for each time step -- Langevin evolution
             call exec_dif
  32      continue
 
+c for debug/testing process, output HQ evolution
+!        call outputEvolution(pevent)
+ 
 c output in time-step loop
 c insert output condition
       if(out_skip.ne.1.and.mod(tstep,out_skip).eq.0) then
@@ -458,7 +485,10 @@ c dummy for OSU hydro at the moment
 
 c     set deltat
       deltat = (tmax-initt)/(ntsteps*nlang)
-      if(static.eq.1.or.static.eq.2) deltat = 0.1d0/nlang
+      if(static.eq.1.or.static.eq.2.or.static.eq.3) then
+        deltat = 0.1d0/nlang
+      endif
+
       tau_p=tau+deltat*(lstep-1)
 
       if(static.eq.1) then
@@ -472,6 +502,13 @@ c     set deltat
 
       do 10 i=1,npt
          do 11 j=1,evsamp
+
+! debug:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(6,*) "tracking-before-propagation: ",p_r0(i,j),p_rx(i,j),
+!     &      p_ry(i,j),p_rz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j),
+!     &      T, betax, betay, betaz
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
             iflag=1
 c use OSU hydro
             if(static.eq.2) then
@@ -493,7 +530,24 @@ c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-
                endif
             endif ! OSU hydro
 
+! use 3D-medium information
+        if (static.eq.3) then
+            call readHydroInfoYingru_3D(p_r0(i,j),p_rx(i,j),p_ry(i,j),
+     &          p_rz(i,j), T, betax, betay, betaz, ctl_OSU)
 
+            if (ctl_OSU.ne.0 .or. T.lt.Tcut_critical) then
+                iflag=0
+                flag_stop=flag_stop+1
+            endif
+        endif
+
+
+!! debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(6,*) "tracking-read-hydro-information: ",p_r0(i,j),
+!     &      p_rx(i,j),
+!     &      p_ry(i,j),p_rz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j),
+!     &      T, betax, betay, betaz
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c do particle diffusion/propagation here...
             if(static.eq.1.or.iflag.ne.0) then
 
@@ -546,9 +600,9 @@ c set transport coefficient if necessary
               alpha=6.2832d0/D2piT
               qhat=4d0*alpha/C_F*T**3
 
-!              !write(6,*) "read in PHSD diffusion coefficient: " ,T
-              write(6,*) T
-     &                   ,plength,kappa_d,kappa_l,kappa_t 
+!              write(6,*) "read in PHSD diffusion coefficient: " ,T
+              !write(6,*) T
+!     &                   ,plength,kappa_d,kappa_l,kappa_t 
             else
               write(6,*) "Wrong value for qhat_TP."
               write(6,*) "Terminating ..."
@@ -879,7 +933,6 @@ c store v*kappa/T, to serve as "old" value in next time-step
            endif              
 
 c update momenta (combine radiation and collision):
-
            if(flag_rad.eq.1) then ! only radiative energy loss
              p_px(i,j)  = p_px(i,j) - kpx_gluon 
              p_py(i,j)  = p_py(i,j) - kpy_gluon
@@ -937,7 +990,6 @@ c propagate particle:
          p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
          p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
 
-
 c debug
          if(abs(p_rz(i,j)).gt.tau_p+deltat) then
            write(6,*) ' tachyon scaled! ',p_rz(i,j),
@@ -957,11 +1009,58 @@ c      write(6,*)    '    time in dNg_over_dt table   : ', time_tg
       end
 
 
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c           subroutine  output only basic information
+ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      subroutine outputEvolution(pevent)
+      implicit none
+      include 'df_coms.f'
+      include 'ucoms.f'
+
+      integer pevent,i,j,count_out
+      character*77 fileEvo
+      double precision vers
+      integer itstep
+
+      open(unit=21,file='HQ-evolution-eachStep.dat',status='unknown')
+
+      do 1010 j=1,evsamp
+          if(out_skip.le.1) then
+             WRITE(21,*) evsamp*(pevent-1)+j,npt,bimp,0d0,
+     &            1,1,evsamp
+          else
+             WRITE(21,*) evsamp*(pevent-1)+j,npt,bimp,0d0,
+     &            int(ntsteps/out_skip),int(tstep/out_skip+1),evsamp
+          endif
+
+          write(6,*) ' ->  writing output for event# ',
+     &                 evsamp*(pevent-1)+j
+
+        do 1019 i=1, npt
+          if(corr_flag.eq.1) then
+            count_out=int(i/2d0+0.6d0)
+          else
+            count_out=i
+          endif
+
+c for ebe study, rotate the final momentum by the (par) plane
+        if(out_skip.le.1.and.ebe_flag.eq.1) then
+          call rot2D(-par_plane_phi,p_px(i,j),p_py(i,j))
+          call rot2D(-par_plane_phi,c_vx(i,j),c_vy(i,j))
+        endif ! end rotation
+
+        write(21,*) pid(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
+     &    ,p_rx(i,j),p_ry(i,j),p_rz(i,j),p_r0(i,j),Thydro(i,j)
+
+ 1019 continue
+ 1010 continue
+
+      end subroutine
+
+
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c           subroutine
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-
       subroutine output(pevent)
 
       implicit none
