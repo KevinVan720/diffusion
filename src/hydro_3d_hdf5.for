@@ -378,11 +378,9 @@
       Double precision, Dimension(hydroGrid_XL:hydroGrid_XH,
      & hydroGrid_YL:hydroGrid_YH,hydroGrid_ZL:hydroGrid_ZH,1:1)
      &  :: dset_data
-      Double precision, Dimension(hydroGrid_XL:hydroGrid_XH,
-     & hydroGrid_YL:hydroGrid_YH,hydroGrid_ZL:hydroGrid_ZH,1:1)
+      Double precision, Dimension(hydroGrid_ZL:hydroGrid_ZH,
+     & hydroGrid_YL:hydroGrid_YH,hydroGrid_XL:hydroGrid_XH,1:1)
      &  :: dset_data_Cstyle
-
-
       Integer :: error
       Integer :: i, j, k
 
@@ -392,9 +390,9 @@
       data_dims(2) = hydroGrid_YH - hydroGrid_YL + 1
       data_dims(3) = hydroGrid_ZH - hydroGrid_ZL +1
 
-      data_dims_Cstyle(1) = data_dims(1)
+      data_dims_Cstyle(1) = data_dims(3)
       data_dims_Cstyle(2) = data_dims(2)
-      data_dims_Cstyle(3) = data_dims(3)
+      data_dims_Cstyle(3) = data_dims(1)
 
       ! open an existing dataset
       call h5dopen_f(group_id, datasetName, dset_id, error)
@@ -406,7 +404,8 @@
       do i = hydroGrid_XL, hydroGrid_XH, 1
         do j = hydroGrid_YL, hydroGrid_YH, 1
           do k = hydroGrid_ZL, hydroGrid_ZH, 1
-            dset_data(i,j,k,1) = dset_data_Cstyle(i,j,k,1)    !!!!!     ATTENTTION (CHECK THIS)
+            dset_data(i,j,k,1) = dset_data_Cstyle(k,j,i,1)    !!!!!     ATTENTTION (CHECK THIS)
+                                                              
           enddo
         enddo
       enddo
@@ -450,7 +449,7 @@
 
       ctl = 0
       if((t*t-z*z).lt.0) then
-        write(6,*) "Warning! t**2-z**2<0 ..."
+!        write(6,*) "Warning! t**2-z**2<0 ..."
         tau=0
         eta=0d0
       else
@@ -475,11 +474,15 @@
         ctl = 1
         return
       endif
-
+       
+!debug !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!       write(6,*) "tracking-hydro-3d-1: ", tau,eta,Temp,vx,vy,vz
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
       call readHydroinfoBuffered_ideal_3D(tau,x,y,eta,Temp,vx,vy,vz)
 ! debug
 ! this is a 3D hydro but mimic 2D behavior!
-!     vz = z/(t+1D-30)
+!      vz = z/(t+1D-30)
 !      gamma = 1d0/(sqrt(1d0-vz*vz) + 1D-30)
 !      vx = vx/gamma
 !      vy = vy/gamma
@@ -492,7 +495,10 @@
         vy = vy/sqrt(bfactor)
         vz = vz/sqrt(bfactor)
       endif
-        
+       
+!debug !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!       write(6,*) "tracking-hydro-3d: ", tau,eta,Temp,vx,vy,vz
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       end subroutine
 !-----------------------------------------------------------------------------
 
@@ -520,7 +526,6 @@
      &          hydroGrid_dx, hydroGrid_dy, hydroGrid_dz,
      &          hydroGrid_tau0, hydroGrid_dtau, hydroGrid_taumax,
      &          hydroGrid_numOfframes
-
 
       Double Precision, Dimension(1:2,1:2,1:2) :: Temp1,VxB1,VyB1,VzB1
       Double Precision, Dimension(1:2,1:2,1:2) :: Temp2,VxB2,VyB2,VzB2
@@ -553,6 +558,10 @@
       zi = floor(var1)
       zInc = var1 - zi
 
+!!!debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      write(6,*) "tracking-hydro-read: ", tau, tauI, tauInc
+!     &  ,x, xi, xInc, y, yi, yInc, eta, zi, zInc
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       call readHydroBlockBufferedOrdered_ideal_3D
      &  (tauI+1,xi,yi,zi,Temp1,VxB1,VyB1,VzB1)
 
@@ -586,6 +595,14 @@
      & VzB2(1,1,1),VzB2(2,1,1),VzB2(1,2,1),VzB2(1,1,2),
      & VzB2(1,2,2),VzB2(2,1,2),VzB2(2,2,1),VzB2(2,2,2))
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      if (Temp.ge.0.75) then
+!        write(6,*) "debug!!..",tau,tauI,tauInc,x,xi,xInc,
+!     &   y,yi,yInc,eta,zi,zInc,Temp
+!      endif
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      write(6,*) "debug: readHydroInfo(T,vx,vy,vz): ", Temp,vx,vy,vz
       end subroutine
 !--------------------------------------------------------------------
@@ -669,6 +686,11 @@
        VyB23(:,:,:) = vyM(idxX:idxX+1,idxY:idxY+1,idxZ:idxZ+1,idxTau)
        VzB23(:,:,:) = vzM(idxX:idxX+1,idxY:idxY+1,idxZ:idxZ+1,idxTau)
 
+!debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      write(6,*) "debug-read-from-buffer: ", idxX, idxY, idxZ, idxTau
+!     & , TM(idxX,idxY,idxZ,idxTau)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
        End Subroutine
 !--------------------------------------------------------------------------
 
@@ -695,6 +717,14 @@
      &   A1000,A1100,A1010,A1001,A1011,A1101,A1110,A1111)
 
       Atxyz = t*(Axyz2 - Axyz1) + Axyz1
+
+!!!! debug!!!!!!!!!!!!!!!!!!!!      
+!      write(6,*) "debug-hydro...",A0000,A0100,A0010,A0001,A0011,
+!     &             A0101,A0110,A0111,A1000,A1100,A1010,
+!     &             A1001,A1011,A1101,A1110,A1111
+
+!      write(6,*) "debug-hydro...",t, x,y,z,Axyz1, Axyz2, Atxyz
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       return
       end
 !------------------------------------------------------------------------
@@ -708,10 +738,23 @@
       Double Precision :: x,y,z,Axyz
       Double Precision :: A000,A100,A010,A110,A001,A101,A011,A111
 
+      
       Axyz=A000*(1-x)*(1-y)*(1-z) + A100*x*(1-y)*(1-z)
      &      +A010*(1-x)*y*(1-z) + A001*(1-x)*(1-y)*z
      &      +A011*(1-x)*y*z + A101*x*(1-y)*z
      &      +A110*x*y*(1-z) + A111*x*y*z
+
+
+!!!debug !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !Axyz = Max(A000,A100,A010,A001,A110,A101,A011,A111)
+        !Axyz = A000
+
+!       if(A000.eq.0 .or.A100.eq.0 .or. A010.eq.0 .or. A001.eq.1
+!     &  .or. A011.eq.0 .or.A101.eq.0 .or.A110.eq.0 .or.A111.eq.1) then
+!      write(6,*) "debug: interpolate! ", x, y, z,
+!     & A000, A010, A100, A110, A001, A011, A101, A111
+!       endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       return
       end

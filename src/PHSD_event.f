@@ -9,21 +9,21 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       double precision dum_rx, dum_ry, dum_rz, dum_r0
       double precision dum_px, dum_py, dum_pz, dum_E
       double precision mass
-      character*80 file31
+      character*80 file30
     
-      call getenv('ftn31', file31)
+      call getenv('ftn30', file30)
 
-      if (file31(1:4).ne.'    ') then
-        open(unit=31, file=file31, status='old')
+      if (file30(1:4).ne.'    ') then
+        open(unit=30, file=file30, status='old')
       endif
 
-      !read(unit=31,fmt=*,err=1199,end=1199) numPart
+      !read(unit=30,fmt=*,err=1199,end=1199) numPart
       !write(6,*) numPart
-      numXY = 66156 
+      numXY = 65534
 
       write(6,*) numXY
       do 1102 i=1, numXY
-        read(31, *, end=1103, err=1199) dum_rx,dum_ry,dum_rz,
+        read(30, *, end=1103, err=1199) dum_rx,dum_ry,dum_rz,
      &      dum_r0, dum_px, dum_py, dum_pz, dum_E
      
         initX(i) = dum_rx
@@ -33,7 +33,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         initPX(i) = dum_px
         initPY(i) = dum_py
         initPZ(i) = dum_pz
-        initE0(i) = dum_E
+        initE0(i) = sqrt(dum_px**2+dum_py**2+dum_pz**2+cMass**2)
  1102 continue
 
  1103 continue

@@ -23,6 +23,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       integer oflag,hflag,ioflag,geoflag
       double precision deltat,energ
       double precision rlu,p_length,utheta,phi
+      double precision dum_A, dum_B, dum_C
 
       rand_seed=-1
       call sseed(rand_seed)
@@ -220,13 +221,28 @@ c initialize cell velocity of hydro medium
                c_vy(npt,j)=0d0
                c_vz(npt,j)=0d0
 
+! debug:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(6,*) "tracking-very-initialize: ",p_r0(i,j),p_rx(i,j),
+!     &      p_ry(i,j),p_rz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
  11         continue
          endif
  10   continue ! end re-distribute particles in the phase space
 
-c now synchronize particles to 1st time-step
 
-      if(static.eq.2) initt = 0.6d0 ! OSU hydro starts at 0.6~fm/c
+! debug:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(6,*) "tracking-very-initialize2: ",p_r0(1,1),p_rx(1,1),
+!     &      p_ry(1,1),p_rz(1,1),p_px(1,1),p_py(1,1),p_pz(1,1),p_p0(1,1)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+c now synchronize particles to 1st time-step
+      if(static.eq.2) then
+      
+        initt = 0.6d0 !OSU hydro starts at 0.6~fm/c
+
       do 20 i=1,npt
          do 21 j=1,evsamp
             deltat=initt-p_r0(i,j)
@@ -236,46 +252,66 @@ c       time! Model works best if there is a clear separation
 c       of time-scales between PCM and Hydro...
 
             energ = p_p0(i,j)
-! in the case of 3D HQ initialization            
-!            p_r0(i,j)  = initt
-!            p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
-!            p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
-c            p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
-!            p_rz(i,j)  = 0d0
+            p_r0(i,j)  = initt
+            p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
+            p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
+            p_rz(i,j)  = 0d0
 
-             p_r0(i,j) = initt
-             p_rx(i,j) = p_rx(i,j) + p_pz(i,j)/energ*deltat
-             p_ry(i,j) = p_ry(i,j) + p_pz(i,j)/energ*deltat
-             p_rz(i,j) = p_rz(i,j) + p_pz(i,j)/energ*deltat
+            if(abs(p_rx(i,j)).gt.initt) then
+                p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
+            endif
+            p_reta(i,j) = 0.5d0*log((p_r0(i,j)+p_rz(i,j))/
+     &                              (p_r0(i,j)-p_rz(i,j)))
+            time_lim(i,j) = initt ! record time of last interaction
+ 21      continue
+ 20      continue
+      endif
+
+      if(static.eq.3) then
+        initt = 0.6d0 ! 3D propagation is a bit more complicate
+                      ! propagate from tau=tau0 -> tau=tau1
+                      ! solve equation
+      do 272 i=1, npt
+        do 273 j=1, evsamp
+            energ = p_p0(i,j)
+            dum_A = (1-(p_pz(i,j)/energ)**2)
+            dum_B = 2d0*(p_r0(i,j) - p_rz(i,j)*p_pz(i,j)/energ)
+            dum_C = (p_r0(i,j)**2 - p_rz(i,j)**2) - initt**2
+            deltat = (-dum_B + sqrt(dum_B**2 - 4d0*dum_A*dum_C))/
+     &                (2d0*dum_A)
+    
+!            deltat = initt - p_r0(i,j)
+            p_r0(i,j) = p_r0(i,j) + deltat
+            p_rx(i,j) = p_rx(i,j) + p_px(i,j)/energ*deltat
+            p_ry(i,j) = p_ry(i,j) + p_py(i,j)/energ*deltat
+            p_rz(i,j) = p_rz(i,j) + p_pz(i,j)/energ*deltat
 
             if(abs(p_rz(i,j)).gt.initt) then
-               p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
+               p_rz(i,j)= sign(sqrt(p_r0(i,j)**2-initt**2),
+     &          p_rz(i,j))
             endif
             p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
      &                            (p_r0(i,j)-p_rz(i,j)))
-            time_lim(i,j)=initt   ! record time of last interaction
- 21      continue
- 20   continue
+            time_lim(i,j)=p_r0(i,j)   ! record time of last interaction
 
-      if(static.eq.3) initt=0.0d0 ! PHSD medium starts at 0.6
-      do 261 i=1, npt
-        do 262 j=1, evsamp
-          energ=p_p0(i,j)
-          if (p_r0(i,j).lt.p_rz(i,j)) then
-            p_reta(i,j) = 0d0
-          else
-            p_reta(i,j) = 0.5d0*log((p_r0(i,j)+p_rz(i,j))/
-     &                              (p_r0(i,j)-p_rz(i,j)))
-          endif
-          time_lim(i,j) = p_r0(i,j)
+!!!!debug!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(6,*) "tracking-very-initialize4: ", i,p_r0(i,j),p_rz(i,j),
+!     &   sqrt(p_r0(i,j)**2 - p_rz(i,j)**2)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
- 262    continue
- 261    continue
-
+ 273     continue
+ 272     continue
+      endif
 
 cdebug
       write(6,*) '-> ', npt,' particles initialized for calculation'
       write(6,*) '-> ', evsamp,' events will be run in parallel'
+
+! debug:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(6,*) "tracking-very-initialize3: ",p_r0(1,1),p_rx(1,1),
+!     &      p_ry(1,1),p_rz(1,1),p_px(1,1),p_py(1,1),p_pz(1,1),p_p0(1,1)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
       if(out_skip.eq.0) then ! write out init. distri. and end program
          call output(pevent)
@@ -337,10 +373,11 @@ c variables related to the last radiated gluon -- for tau cut purpose
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       if(static.eq.1.or.static.eq.2) then
          ntsteps=tsteps_cut  ! total time steps for Langevin evolution
-         tau=0.6d0-0.1d0
+         tau=initt-0.1d0
       else if (static.eq.3) then  
          ntsteps = tsteps_cut
-         tau=0.0-0.1d0  ! PHSD hydro starts from 0 tau
+         tau=initt-0.1d0  
+!         write(6,*) "debug: tau", tau
       endif
 
       do 22 tstep=1,ntsteps        
@@ -353,6 +390,11 @@ c do physics for each time step -- Langevin evolution
      &                    (tstep-1)*nlang+lstep-1
                goto 23
             endif
+
+! debug:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(6,*) "tracking-before-exec-dif: " ,p_r0(1,1),p_rx(1,1),
+!     &      p_ry(1,1),p_rz(1,1),p_px(1,1),p_py(1,1),p_pz(1,1),p_p0(1,1)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             call exec_dif
  32      continue
@@ -504,7 +546,7 @@ c     set deltat
          do 11 j=1,evsamp
 
 ! debug:!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!        write(6,*) "tracking-before-propagation: ",p_r0(i,j),p_rx(i,j),
+!      write(6,*) "tracking-before-propagation: ",i, p_r0(i,j),p_rx(i,j),
 !     &      p_ry(i,j),p_rz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j),
 !     &      T, betax, betay, betaz
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -532,6 +574,12 @@ c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-
 
 ! use 3D-medium information
         if (static.eq.3) then
+
+!!! debug !!!!!!!!!!!!!!!!!!!
+!           call readHydroInfoYingru_3D(0.2d0,1d0,2d0,0d0,T,betax,
+!     &          betay,betaz,ctl_OSU)
+!            write(6,*) 'debug-test-medium: ',T,betax,betay,betaz
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             call readHydroInfoYingru_3D(p_r0(i,j),p_rx(i,j),p_ry(i,j),
      &          p_rz(i,j), T, betax, betay, betaz, ctl_OSU)
 
@@ -543,10 +591,17 @@ c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-
 
 
 !! debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!        write(6,*) "tracking-read-hydro-information: ",p_r0(i,j),
+!            IF (abs(betaz).lt.abs(p_pz(i,j)/p_p0(i,j))) then
+!                betaz = sign(p_pz(i,j)/p_p0(i,j), betaz)
+!              !write(6,*) "debugging ..", i,j,betaz, p_pz(i,j)/p_p0(i,j)
+!            endif
+
+!            if (T.ge.0.75) then
+!        write(6,*) "tracking-read-hydro-information: ",i, j,p_r0(i,j),
 !     &      p_rx(i,j),
 !     &      p_ry(i,j),p_rz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j),
 !     &      T, betax, betay, betaz
+!            endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 c do particle diffusion/propagation here...
             if(static.eq.1.or.iflag.ne.0) then
@@ -985,19 +1040,29 @@ c propagate particle:
          energ = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
      &            +p_mass(i,j)**2)
          p_p0(i,j)= energ
-         p_r0(i,j)  = tau_p+deltat
+         p_r0(i,j) = p_r0(i,j)+deltat
+! debug: Yingru, why don't you update with real time?
+!         p_r0(i,j)  = tau_p+deltat
          p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
          p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
          p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
 
+
+!! debug !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+!       write(6,*) "tracking-after-propagation: ",i,p_r0(i,j),p_rx(i,j),
+!     &      p_ry(i,j),p_rz(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j),
+!     &      T, betax, betay, betaz
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 c debug
-         if(abs(p_rz(i,j)).gt.tau_p+deltat) then
+         if(abs(p_rz(i,j)).gt.p_r0(i,j)+deltat) then
            write(6,*) ' tachyon scaled! ',p_rz(i,j),
      &                  tau_p,p_pz(i,j)/energ
-          p_rz(i,j)=sign(tau_p+deltat-1d-10,p_rz(i,j))
+           p_rz(i,j)=sign(tau_p+deltat-1d-10,p_rz(i,j))
           write(6,*) ' new rz ',p_rz(i,j) 
         endif
-        p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
+         p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
      &              (p_r0(i,j)-p_rz(i,j)))
 
  11      continue
