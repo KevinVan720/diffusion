@@ -70,7 +70,7 @@ static....    3       ! Choose the type of medium
                       ! 0 - Chiho's hydro, 1 - Static, 2 - OSU hydro, 3 - vhlle 3D hydro
 stat_cool.    0       ! If static=1, stat_cool=1 provides cooling of Bjorken's expansion
 T_static..    0.30    ! If static=1, set medium temperature in GeV here
-tsteps_cut    200     ! Control total timesteps for Langevin evolution 
+tsteps_cut    300     ! Control total timesteps for Langevin evolution 
                       ! (One timestep for 0.1~fm/c)
                       ! Necessary for static=1 and helpful for static=2
 temp_cut..    1       ! 0 for no cut, 1 for cut (necessary for dynamic medium)
