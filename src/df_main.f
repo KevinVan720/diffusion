@@ -257,7 +257,7 @@ c       of time-scales between PCM and Hydro...
               p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
               p_rz(i,j)  = 0d0
 
-              if(abs(p_rx(i,j)).gt.initt) then
+              if(abs(p_rz(i,j)).gt.initt) then
                 p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
               endif
               p_reta(i,j) = 0.5d0*log((p_r0(i,j)+p_rz(i,j))/
