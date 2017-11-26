@@ -378,11 +378,9 @@
       Double precision, Dimension(hydroGrid_XL:hydroGrid_XH,
      & hydroGrid_YL:hydroGrid_YH,hydroGrid_ZL:hydroGrid_ZH,1:1)
      &  :: dset_data
-      Double precision, Dimension(hydroGrid_XL:hydroGrid_XH,
-     & hydroGrid_YL:hydroGrid_YH,hydroGrid_ZL:hydroGrid_ZH,1:1)
+      Double precision, Dimension(hydroGrid_ZL:hydroGrid_ZH,
+     & hydroGrid_YL:hydroGrid_YH,hydroGrid_XL:hydroGrid_XH,1:1)
      &  :: dset_data_Cstyle
-
-
       Integer :: error
       Integer :: i, j, k
 
@@ -392,9 +390,9 @@
       data_dims(2) = hydroGrid_YH - hydroGrid_YL + 1
       data_dims(3) = hydroGrid_ZH - hydroGrid_ZL +1
 
-      data_dims_Cstyle(1) = data_dims(1)
+      data_dims_Cstyle(1) = data_dims(3)
       data_dims_Cstyle(2) = data_dims(2)
-      data_dims_Cstyle(3) = data_dims(3)
+      data_dims_Cstyle(3) = data_dims(1)
 
       ! open an existing dataset
       call h5dopen_f(group_id, datasetName, dset_id, error)
@@ -406,7 +404,7 @@
       do i = hydroGrid_XL, hydroGrid_XH, 1
         do j = hydroGrid_YL, hydroGrid_YH, 1
           do k = hydroGrid_ZL, hydroGrid_ZH, 1
-            dset_data(i,j,k,1) = dset_data_Cstyle(i,j,k,1)    !!!!!     ATTENTTION (CHECK THIS)
+            dset_data(i,j,k,1) = dset_data_Cstyle(k,j,i,1)    !!!!!     ATTENTTION (CHECK THIS)
           enddo
         enddo
       enddo
@@ -449,8 +447,14 @@
       vz=0d0
 
       ctl = 0
-      tau = sqrt(t*t-z*z)
-      eta = 0d5 * Log((t+z)/(t-z))
+      if ((t*t - z*z) .lt. 0) then
+        write(6,*) "Warning! t<z .."
+        tau = 0
+        eta = 0d0
+      else
+        tau = sqrt(t*t-z*z)
+        eta = 0d5 * Log((t+z)/(t-z))
+      endif
 
       if(tau.lt.hydroGrid_tau0) then
         ctl=3

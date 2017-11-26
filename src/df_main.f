@@ -93,7 +93,7 @@ c 1000 is the total buffer size > lifetime / dTau used in hydro output
 
 c     read in 3D hydro
       if(static.eq.3 .and. out_skip.ne. 0) then
-         call readHydroFiles_initial_3D("hydroMedium.h5",1000)
+         call readHydroFiles_initial_3D("vHLLEMedium.h5",1000)
       endif
 
 c     read weights of pT distributions of initial heavy quark
@@ -145,6 +145,12 @@ c     read in initial particles
             stop
          endif
          call read_xy_init(iret)
+      elseif(HQ_input.eq.4) then ! read from an x-y-z position list
+         if(reweight.eq.0) then
+             write(*,*) "PLase set reweight to 1 or 2"
+             stop
+         endif
+         call read_xyz_init(iret)
       else
          write(*,*) "Wrong value for HQ_input"
          stop
@@ -201,6 +207,8 @@ c         call reSampleXY2
          stop
       elseif(HQ_input.eq.3.and.sampleCount.ne.NUMSAMP) then
          call reSampleXY3
+      elseif(HQ_input.eq.4.and.sampleCount.ne.NUMSAMP) then
+         call reSampleXY4
       endif
 
 cccccccc now filter out particles used for calculation cccccccccccccccc
@@ -2077,153 +2085,6 @@ c calculate total cross section of HQ production
        return
 
        end
-
-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
-      subroutine read_xy_init(iret)
-
-      implicit none
-      include 'df_coms.f'
-      include 'ucoms.f'
-
-      integer numPart,iret,index_xy
-      double precision mass,sigma_HQ,dum_rx,dum_ry
-      double precision rlu
-      character*80 file30
-
-      numXY=0
-
- 2201 continue
-
-!      read(unit=5,fmt=*,err=2204,end=2202) dum_rx,dum_ry
-! Yingru (Read from file)
-      call getenv('ftn30', file30)
-      If (file30(1:4) .NE. '    ') Then
-        OPEN(UNIT=30, FILE=file30, STATUS='OLD', FORM='FORMATTED')
-      End If
-     
-      read(unit=30,fmt=*,err=2204,end=2202) dum_rx, dum_ry
-!      write(6, *) dum_rx, dum_ry
-! end of Yingru modify
-      numXY=numXY+1
-      initX(numXY)=dum_rx
-      initY(numXY)=dum_ry
-
-      if(numXY.lt.mxpart) then
-         goto 2201
-      else
-         write(6,*) "XY table is full: ",numXY
-         write(6,*) "End reading in initial positions."
-         iret=1
-         goto 2203
-      endif
-
- 2202 continue
-      iret=1
-      write(6,*) 'EOF reached in the table of initial positions.'
-      write(6,*) 'Number of XY positions: ',numXY
-      write(6,*) "Finish reading in initial positions."
-
- 2203 continue 
-
-      if(exp_setup.eq.1) then ! LHC 2.76~TeV
-         sigma_pptot = 61.3564d0
-         Ap = 208
-         Zp = 82
-         At = 208
-         Zt = 82
-         ecm = 2760d0
-      elseif(exp_setup.eq.2) then ! RHIC 200~GeV
-         sigma_pptot = 41.9357d0
-         Ap = 197
-         Zp = 79
-         At = 197
-         Zt = 79
-         ecm = 200d0
-      else
-         write(*,*) "Unexpected experimental setup ..."
-         write(*,*) "Terminating ..."
-         stop
-      endif
-
-      if(reweight.ne.1) then
-         sigma_ctot=sigma_c0*2d0*eta_cut
-         sigma_btot=sigma_b0*2d0*eta_cut
-      endif
-
-      if(iflav.eq.4) then ! c quark
-         sigma_HQ=sigma_ctot
-      elseif(iflav.eq.5) then ! b quark
-         sigma_HQ=sigma_btot
-      else
-         write(*,*) "Unexpected id of heavy quark ..."
-         write(*,*) "Terminating ..."
-         stop
-      endif
-
-      if(num_binary.eq.0) then 
-         npart=numXY
-      elseif(num_binary.lt.0) then
-         npart=-num_binary
-      else
-         npart=int(sigma_HQ/sigma_pptot*num_binary)*2
-      endif     
-
-c generate initial table
-      
-      entry reSampleXY3
-
-      numPart=0
-
-      if(iflav.eq.4) then ! c quark
-         mass=cMass
-      elseif(iflav.eq.5) then ! b quark
-         mass=bMass
-      endif
-
-      do while (numPart.lt.npart)
-
-         numPart = numPart+1
-         index_xy = int(rlu(0)*numXY)+1
-         if(index_xy.gt.numXY) index_xy = numXY
-         ityp(numPart) = iflav
-         rx(numPart) = initX(index_xy)
-         ry(numPart) = initY(index_xy)
-         rz(numPart) = 0d0
-         r0(numPart) = 0d0
-         fmass(numPart) = mass
-         call pQCDwt(ityp(numPart),px(numPart),py(numPart),pz(numPart),
-     &           p0(numPart),fmass(numPart),pweight(numPart))
-
-c now its anti-particle (if consider pair production)
-         if(corr_flag.eq.1) then
-            ityp(numPart+1) = -ityp(numPart)
-            px(numPart+1) = -px(numPart)
-            py(numPart+1) = -py(numPart)
-            pz(numPart+1) = -pz(numPart)
-            p0(numPart+1) = p0(numPart)
-            fmass(numPart+1) = fmass(numPart)
-            rx(numPart+1) =  rx(numPart)
-            ry(numPart+1) =  ry(numPart)
-            rz(numPart+1) =  rz(numPart)
-            r0(numPart+1) =  r0(numPart)
-            pweight(numPart+1) = pweight(numPart)
-            numPart=numPart+1
-         endif
-
-      enddo
-
-c      write(6,*) rx(1),rx(2),rx(3),rx(npart),rx(npart+1)
-
-      return
-
- 2204 continue
-      write(6,*) 'READ-ERROR in weight table'
-      write(6,*) 'terminating ...'
-      stop
-      return
-
-      end
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 

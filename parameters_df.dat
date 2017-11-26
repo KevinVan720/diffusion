@@ -35,6 +35,7 @@ HQ_input..    3       ! Source of the input file of initial heavy quarks:
                       ! 1 - read in oscar file;
                       ! 2 - read in OSU file (initial positions only).
                       ! 3 - read in a list of x-y positions only.
+                      ! 4 - read in a list of x-y-z positions only
 NUMSAMP...    1       ! number of repeated samples
                       ! only ready for static=2, HQ_input=3
 reweight..    2       ! Re-weight initial momentum distribution:

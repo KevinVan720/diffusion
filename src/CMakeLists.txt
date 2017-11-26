@@ -9,6 +9,7 @@ add_executable(${PROJECT_NAME}
   rad_fnc.f  
   rad_inp.f  
   qhat.f
+  read_HQ_init.f
   )
 
 

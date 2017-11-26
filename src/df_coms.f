@@ -115,9 +115,9 @@ c set number of Langevin steps within hydro step
       parameter(inv_fm_to_GeV=0.1973d0)
 
       integer numXY,NUMSAMP
-      double precision initX(mxpart),initY(mxpart) 
+      double precision initX(mxpart),initY(mxpart),initZ(mxpart)
       common/initXY1/numXY,NUMSAMP
-      common/initXY2/initX,initY      
+      common/initXY2/initX,initY,initZ
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c parameters/variables for gluon radiation
