@@ -316,8 +316,9 @@ c initialize cell velocity of hydro medium
 
 c now synchronize particles to 1st time-step
 
-      if(static.eq.2.or.static.eq.3) initt = 0.6d0 ! OSU hydro starts at 0.6~fm/c
-                                                   ! vhlle hydro starts at 0.6fm/c
+      if(static.eq.2) then
+       
+       initt = 0.6d0   ! OSU hydro starts at 0.6 fm/c
 
       do 20 i=1,npt
         do 21 j=1,evsamp
@@ -345,6 +346,68 @@ c       of time-scales between PCM and Hydro...
           time_lim(i,j)=initt   ! record time of last interaction
  21      continue
  20   continue
+        endif
+
+      if (static.eq.3)  then
+        initt = 0.6d0 !vHLLE hydro starts at 0.6fm/c
+        if (HQ_input.eq.3) then ! read in XY-list where XY are in the
+                              ! right place at 0.6fm/c, while z=0
+          do 350 i=1, npt
+            do 351 j=1, evsamp
+              energ = p_p0(i,j)
+              ! back-propagation is need only for XY direction
+              ! two step propagation: back-propagate-xy to tau=0
+              !                       propagate xyz to tau=initt
+              deltat = (initt-p_r0(i,j))/sqrt(1-(p_pz(i,j)/energ)**2)
+              !p_rx(i,j) = p_rx(i,j) + p_px(i,j)/energ * deltat
+              !p_ry(i,j) = p_ry(i,j) + p_py(i,j)/energ * deltat
+              !p_rz(i,j) = 0d0
+
+              !deltat = initt/sqrt(1-(p_pz(i,j)/energ)**2)
+              !p_r0(i,j) = initt
+              p_rx(i,j) = p_rx(i,j) + p_px(i,j)/energ * deltat
+              p_ry(i,j) = p_ry(i,j) + p_py(i,j)/energ * deltat
+              p_rz(i,j) = p_rz(i,j) + p_pz(i,j)/energ * 
+     &                    initt/sqrt(1d0-(p_pz(i,j)/energ)**2)  
+
+              if (abs(p_rz(i,j)).gt.initt) then
+                 p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
+              endif
+
+              p_reta(i,j)=0.5d0* log((p_r0(i,j) + p_rz(i,j))/
+     &                            (p_r0(i,j)-p_rz(i,j)))
+              time_lim(i,j) = initt ! record time of last interation
+
+ 351    continue
+ 350    continue
+        
+        else if (HQ_input.eq.4) then ! read in xyz list(it is still a
+                                     ! simple case since all the HQs are 
+                                     ! produced at same time
+          do 390 i=1, npt
+            do 391 j=1, evsamp
+              energ = p_p0(i,j)
+              !! back-progatation in all the XYZ direction
+              deltat = (initt - p_r0(i,j))/sqrt(1-(p_pz(i,j)/energ)**2)
+              p_rx(i,j) = p_rx(i, j) + p_px(i,j)/energ * deltat
+              p_ry(i,j) = p_ry(i, j) + p_py(i,j)/energ * deltat
+              p_rx(i,j) = p_rz(i, j) + p_pz(i,j)/energ * deltat
+
+              p_r0(i,j) = initt
+              if (abs(p_rz(i,j)).gt.initt) then
+                 p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
+              endif
+
+              p_reta(i,j)=0.5d0* log((p_r0(i,j) + p_rz(i,j))/
+     &                            (p_r0(i,j)-p_rz(i,j)))
+              time_lim(i,j) = initt ! record time of last interation
+
+ 391    continue
+ 390    continue
+    
+        endif
+
+        endif
 
 cdebug
       write(6,*) '-> ', npt,' particles initialized for calculation'
@@ -411,7 +474,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       if(static.eq.1.or.static.eq.2.or.static.eq.3) then
          ntsteps=tsteps_cut  ! total time steps for Langevin evolution
-         tau=0.6d0-0.1d0
+         tau=initt-0.1d0
       endif
 
       do 22 tstep=1,ntsteps        
@@ -1357,7 +1420,8 @@ c propagate particle:
      &                      +p_mass(i,j)**2)
             p_p0(i,j)= energ
 
-            p_r0(i,j)  = tau_p+deltat
+            p_r0(i,j)  = p_r0(i,j) +deltat
+! debug: Yingru (previous was p_r0(i,j) = tau_p + deltat was not correct
             p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
             p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
             p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
