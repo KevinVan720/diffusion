@@ -108,7 +108,7 @@ c generate initial table
          rx(numPart) = initX(index_xy)
          ry(numPart) = initY(index_xy)
          rz(numPart) = 0d0
-         r0(numPart) = 0d0
+         r0(numPart) = 0d6
          fmass(numPart) = mass
          call pQCDwt(ityp(numPart),px(numPart),py(numPart),pz(numPart),
      &           p0(numPart),fmass(numPart),pweight(numPart))

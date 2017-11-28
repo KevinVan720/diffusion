@@ -364,12 +364,14 @@ c       of time-scales between PCM and Hydro...
               !p_rz(i,j) = 0d0
 
               !deltat = initt/sqrt(1-(p_pz(i,j)/energ)**2)
-              !p_r0(i,j) = initt
               p_rx(i,j) = p_rx(i,j) + p_px(i,j)/energ * deltat
               p_ry(i,j) = p_ry(i,j) + p_py(i,j)/energ * deltat
               p_rz(i,j) = p_rz(i,j) + p_pz(i,j)/energ * 
      &                    initt/sqrt(1d0-(p_pz(i,j)/energ)**2)  
 
+              p_r0(i,j) = initt/sqrt(1d0-(p_pz(i,j)/energ)**2)
+
+              !write(6,*) "debug: ", sqrt(p_r0(i,j)**2-p_rz(i,j)**2)
               if (abs(p_rz(i,j)).gt.initt) then
                  p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
               endif
@@ -1922,6 +1924,7 @@ c position vector should also be rotated but not useful yet
                  call rot2D(-par_plane_phi,p_px(i,j),p_py(i,j))
                  call rot2D(-par_plane_phi,c_vx(i,j),c_vy(i,j))
               endif ! end rotation
+              edensity(i,j) = 0d0  ! Yingru: this part is always err
               WRITE(20,2420) count_out,pid(i,j),
      &                       p_px(i,j),p_py(i,j),p_pz(i,j),
      &                       p_p0(i,j),p_mass(i,j),p_rx(i,j),p_ry(i,j),
