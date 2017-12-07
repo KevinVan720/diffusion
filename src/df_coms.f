@@ -155,7 +155,8 @@ c parameters/variables for gluon radiation
      &                 ,max_dNgfnc
 
       double precision cMass,bMass
-      parameter(cMass=1.27d0,bMass=4.19d0)
+      parameter(cMass=1.3d0,bMass=4.2d0)
+      !parameter(cMass=1.27d0, bMass=4.19d0)
 
       double precision HQenergy,HQmass,time,time_init,temp_med,time_tg
       double precision qhat,time_gluon
@@ -176,7 +177,7 @@ c parameters/variables for gluon radiation
 
 
       integer gamma_nT,gamma_nE
-      parameter(gamma_nT=61,gamma_nE=51)
+      parameter(gamma_nT=31,gamma_nE=51)
       double precision gamma_dT, gamma_dE
       double precision gamma_TL, gamma_TH, gamma_EL, gamma_EH
       double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)
