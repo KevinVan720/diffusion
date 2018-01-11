@@ -136,7 +136,7 @@ c parameters/variables for gluon radiation
       common/radflag2/fgluon,time_lim,init_int,previous_kT
 
       integer HQener_gn,t_gn,temp_gn
-      parameter (HQener_gn=200)
+      parameter (HQener_gn=150)
       parameter (t_gn=70)
       parameter (temp_gn=120)
 
@@ -144,7 +144,7 @@ c parameters/variables for gluon radiation
       double precision max_dNgfnc(t_gn+1,temp_gn,HQener_gn)
 
       double precision HQener_max,t_max,temp_max,temp_min
-      parameter(HQener_max=100.d0)
+      parameter(HQener_max=150.d0)
       parameter(t_max=14.d0)
       parameter(temp_max=0.75d0)
       parameter(temp_min=0.15d0)
