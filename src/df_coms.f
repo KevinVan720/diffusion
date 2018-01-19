@@ -187,11 +187,13 @@ c parameters/variables for gluon radiation
       double precision gamma_dT, gamma_dE
       double precision gamma_TL, gamma_TH, gamma_EL, gamma_EH
       double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)
-      double precision PHSD_A(1:60,1:101),PHSD_BL(1:60,1:101),
-     &                 PHSD_BT(1:60, 1:101)
+
+      integer PHSD_nT, PHSD_nE
+      parameter(PHSD_nT=60, PHSD_nE=101)
+      double precision PHSD_A(1:PHSD_nT,1:PHSD_nE),
+     &                 PHSD_BL(1:PHSD_nT,1:PHSD_nE),
+     &                 PHSD_BT(1:PHSD_nT, 1:PHSD_nE)
       common/qhatTP/gamma_dT, gamma_dE, gamma_TL, gamma_TH, 
      &              gamma_EL, gamma_EH, qhat_over_T3,
      &              PHSD_A, PHSD_BL, PHSD_BT
-      integer PHSD_nT, PHSD_nE
-      parameter(PHSD_nT=60, PHSD_nE=101)
       

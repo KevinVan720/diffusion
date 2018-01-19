@@ -163,7 +163,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       character*10 dummy_c
       double precision dummy_f
     
-      open(unit=16, file='PHSD_diffusion.dat', status='old')
+      !open(unit=16, file='PHSD_diffusion.dat', status='old')
+      open(unit=16, file='Catania_pQCD.dat', status='old')
       read(16,*) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
       do 3011 i=1, PHSD_nT
         do 3011 j=1, PHSD_nE

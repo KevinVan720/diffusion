@@ -9,6 +9,7 @@ qhat_TP...    5       ! 0: constant qhat/T^3
                       ! 3: use linear parameterization with momentum dependence
                       ! 4: use only momentum dependence
                       ! 5: use combination from pQCD and linear temperature
+                      ! 6: read in a table of drag and qhat (PHSD)
 # 5 parameters of T, p dependent K factors
 KPamp.....    3.0     ! amplitude of P Kactor
 KPsig.....    7.0     ! width of P Kactor
