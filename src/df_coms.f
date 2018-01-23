@@ -177,7 +177,7 @@ c parameters/variables for gluon radiation
 
 
       integer gamma_nT,gamma_nE
-      parameter(gamma_nT=31,gamma_nE=51)
+      parameter(gamma_nT=31,gamma_nE=101)
       double precision gamma_dT, gamma_dE
       double precision gamma_TL, gamma_TH, gamma_EL, gamma_EH
       double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)

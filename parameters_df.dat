@@ -45,7 +45,7 @@ reweight..    2       ! Re-weight initial momentum distribution:
 # If reweight is not 0, then the following is required
 eta_cut...    0.5     ! rapidity cut, symmetric inteval
 pT_min....    0       ! minimum value of initial pT
-pT_max....    140      ! maximum value of initial pT
+pT_max....    70      ! maximum value of initial pT
 # If reweight=1, set the dimensions of the pT weight table here
 wt_num....    140     ! Number of points in the table
                       ! Maximum number is 300 by default. If exceeded, change wt_MAXnum in df_coms.f
