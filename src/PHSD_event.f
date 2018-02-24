@@ -10,43 +10,50 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       double precision dum_px, dum_py, dum_pz, dum_E
       double precision mass
       character*80 file30
-    
+   
       call getenv('ftn30', file30)
 
       if (file30(1:4).ne.'    ') then
         open(unit=30, file=file30, status='old')
       endif
+    
+      numXY = 0
+ 
+ 1101 continue
 
-      !read(unit=30,fmt=*,err=1199,end=1199) numPart
-      !write(6,*) numPart
-      numXY = 65534
+      numXY = numXY+1
+      read(30, *, err=1199, end=1103) dum_rx, dum_ry, dum_rz,
+     &     dum_r0, dum_px, dum_py, dum_pz, dum_E
+      initX(numXY) = dum_rx
+      initY(numXY) = dum_ry
+      initZ(numXY) = dum_rz
+      initZ0(numXY) = dum_r0
+      initPX(numXY) = dum_px
+      initPY(numXY) = dum_py
+      initPZ(numXY) = dum_pz
+      initE0(numXY) = sqrt(dum_px**2+dum_py**2+dum_pz**2+cMass**2)
 
-      write(6,*) numXY
-      do 1102 i=1, numXY
-        read(30, *, end=1103, err=1199) dum_rx,dum_ry,dum_rz,
-     &      dum_r0, dum_px, dum_py, dum_pz, dum_E
-     
-        initX(i) = dum_rx
-        initY(i) = dum_ry
-        initZ(i) = dum_rz
-        initZ0(i) = dum_r0
-        initPX(i) = dum_px
-        initPY(i) = dum_py
-        initPZ(i) = dum_pz
-        initE0(i) = sqrt(dum_px**2+dum_py**2+dum_pz**2+cMass**2)
- 1102 continue
+      if(numXY .lt.mxpart) then
+        goto 1101
+      else
+        write(6, *) "Initial table is full: ", numXY
+        goto 1103
+      endif
+
 
  1103 continue
       iret = 1
-      write(6,*) 'EOF reached in table of initial positions.'
-      write(6,*) 'number of PHSD initial charm: ', npart
-      
+
+      numXY = numXY -1  ! substract the extra 1 which is added in last step
 
       if(num_binary.eq.0) then ! use numXY as npart
         npart = numXY
       elseif (num_binary.lt.0) then
         npart = -num_binary
       endif
+
+      write(6,*) 'EOF reached in table of initial positions.'
+      write(6,*) 'number of PHSD initial charm: ', npart
         
       numPart = 0
       if(iflav.eq.4) then ! cquark
@@ -163,8 +170,10 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       character*10 dummy_c
       double precision dummy_f
     
-      !open(unit=16, file='PHSD_diffusion.dat', status='old')
-      open(unit=16, file='Catania_pQCD.dat', status='old')
+      open(unit=16, file='PHSD_diffusion.dat', status='old')
+      !open(unit=16, file='Catania_pQCD_diffusion.dat', status='old')
+      !open(unit=16, file='Catania_QPM_diffusion.dat', status='old')
+      !open(unit=16, file='Nantes_diffusion.dat', status='old')
       read(16,*) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
       do 3011 i=1, PHSD_nT
         do 3011 j=1, PHSD_nE

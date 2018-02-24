@@ -449,7 +449,7 @@
 
       ctl = 0
       if((t*t-z*z).lt.0) then
-!        write(6,*) "Warning! t**2-z**2<0 ..."
+        write(6,*) "Warning! t**2-z**2<0 ..."
         tau=0
         eta=0d0
       else
@@ -480,14 +480,25 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
       call readHydroinfoBuffered_ideal_3D(tau,x,y,eta,Temp,vx,vy,vz)
-! debug
-! this is a 3D hydro but mimic 2D behavior!
-!      vz = z/(t+1D-30)
+!!! debug
+!!! this is a 3D hydro but mimic 2D behavior!
+!      if (abs(eta) .lt. 2d0) then
+!        vz = z/(t+1D-30) * 1.3
+!      else
+!       vz = z/(t+1D-30)
+!      endif
 !      gamma = 1d0/(sqrt(1d0-vz*vz) + 1D-30)
 !      vx = vx/gamma
 !      vy = vy/gamma
 
-! a real 3D hydro
+
+!### not really correct...
+      if (abs(vz).gt. (abs(z)+0.2)/(t+1D-30)) then
+        vz = sign((abs(z)+0.2)/(t+1D-30), z)
+      endif
+   
+
+!!! a real 3D hydro
       bfactor = vx**2 + vy**2 + vz**2
       if (bfactor.gt.1.0) then
         write(6,*) "fluid velocity exceeds 1!"

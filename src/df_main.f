@@ -71,7 +71,8 @@ c     read in OSU hydro
       endif
    
       if(static.eq.3.and.out_skip.ne.0) then
-          call readHydroFiles_initial_3D("vHLLE_medium.h5", 1000)
+          !call readHydroFiles_initial_3D("vHLLE_medium.h5", 1000)
+          call readHydroFiles_initial_3D("PHSD_medium.h5", 1000)
       endif
 
 
@@ -1148,8 +1149,9 @@ c for ebe study, rotate the final momentum by the (par) plane
           call rot2D(-par_plane_phi,c_vx(i,j),c_vy(i,j))
         endif ! end rotation
 
-        write(21,*) pid(i,j),p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
+        write(21,*) p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
      &    ,p_rx(i,j),p_ry(i,j),p_rz(i,j),p_r0(i,j),Thydro(i,j)
+     &    ,c_vz(i,j)
 
  1019 continue
  1010 continue
@@ -1214,12 +1216,21 @@ c position vector should also be rotated but not useful yet
                  call rot2D(-par_plane_phi,p_px(i,j),p_py(i,j))
                  call rot2D(-par_plane_phi,c_vx(i,j),c_vy(i,j))
               endif ! end rotation
-              WRITE(20,2420) count_out,pid(i,j),
-     &                       p_px(i,j),p_py(i,j),p_pz(i,j),
-     &                       p_p0(i,j),p_mass(i,j),p_rx(i,j),p_ry(i,j),
-     &                       p_rz(i,j),p_r0(i,j),Thydro(i,j),c_vx(i,j),
-     &                       c_vy(i,j),c_vz(i,j),edensity(i,j),
-     &                       p_ip0(i,j),p_ipT(i,j),p_wt(i,j)
+
+!!!!!!!! comment by Yingru (this output is too redundant...)
+!
+!              WRITE(20,2420) count_out,pid(i,j),
+!     &                       p_px(i,j),p_py(i,j),p_pz(i,j),
+!     &                       p_p0(i,j),p_mass(i,j),p_rx(i,j),p_ry(i,j),
+!     &                       p_rz(i,j),p_r0(i,j),Thydro(i,j),c_vx(i,j),
+!     &                       c_vy(i,j),c_vz(i,j),edensity(i,j),
+!     &                       p_ip0(i,j),p_ipT(i,j),p_wt(i,j)
+        
+            write(20, 2430) pid(i,j),
+     &      p_px(i,j), p_py(i,j), p_pz(i,j), p_p0(i,j)
+     &     ,p_rx(i,j), p_ry(i,j), p_rz(i,j), p_r0(i,j)
+     &     ,p_ip0(i,j), p_ipT(i,j)
+
  2401     continue
  10   continue
 
@@ -1229,6 +1240,7 @@ c position vector should also be rotated but not useful yet
  2300 FORMAT(I10,2X,I10,2X,F8.3,2X,F8.3,2x,i4,2x,i4,2x,i7)
 c sab, oscar modifications
  2420 FORMAT(I10,2X,I10,17(2X,D12.6))
+ 2430 FORMAT(I10,10(2X,D12.6))
 
       return
 
