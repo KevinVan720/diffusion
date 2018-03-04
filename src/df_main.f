@@ -89,7 +89,7 @@ c     read weights of pT distributions of initial heavy quark
 
 c     read table for qhat if it depends on T and p
       if(qhat_TP.eq.1 .or. qhat_TP.eq.5) call read_qhat_table
-      if(qhat_TP.eq.6) call read_PHSD_qhat
+      if(qhat_TP.eq.6 .or. qhat_TP.eq.7) call read_PHSD_qhat
 
 c     read table for gluon radiation
       if(flag_rad.ne.0) call read_radTable
@@ -417,6 +417,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       do 22 tstep=1,ntsteps        
          tau=tau+0.1d0
+         write(6,*) "evolved in tau: ", tau
          
 c do physics for each time step -- Langevin evolution
          do 32 lstep=1,nlang
@@ -689,6 +690,12 @@ c set transport coefficient if necessary
               D2piT=25.13727d0/(2*kappa_t/ T**3)
               alpha=6.2832d0/D2piT
               qhat=4d0*alpha/C_F*T**3
+            else if (qhat_TP.eq.7) then
+              plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
+              call get_PHSD_qhat_ER(kappa_d,kappa_l,kappa_t,T,plength)
+              D2piT=25.13727d0/(2*kappa_t/T**3)
+              alpha=6.2832/D2piT
+              qhat=4d0*alpha/C_F*T**3
 
 !              write(6,*) "read in PHSD diffusion coefficient: " ,T
               !write(6,*) T
@@ -931,7 +938,7 @@ c debug
              v2 = min(0.9999999,v2)
 
 c     get paramters for noise calculation:
-             if(qhat_TP.ne.6) then
+             if(qhat_TP.ne.6 .and. qhat_TP.ne.7) then
                kappa_d=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
                kappa_l=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
                kappa_t=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor

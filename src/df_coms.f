@@ -189,8 +189,8 @@ c parameters/variables for gluon radiation
       double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)
 
       integer PHSD_nT, PHSD_nE
-      !parameter(PHSD_nT=36, PHSD_nE=301)
-      parameter(PHSD_nT= 60, PHSD_nE=101)
+      parameter(PHSD_nT=36, PHSD_nE=301)
+      !parameter(PHSD_nT= 60, PHSD_nE=101)
       double precision PHSD_A(1:PHSD_nT,1:PHSD_nE),
      &                 PHSD_BL(1:PHSD_nT,1:PHSD_nE),
      &                 PHSD_BT(1:PHSD_nT, 1:PHSD_nE)

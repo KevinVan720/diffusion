@@ -170,10 +170,10 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       character*10 dummy_c
       double precision dummy_f
     
-      open(unit=16, file='PHSD_diffusion.dat', status='old')
+      !open(unit=16, file='PHSD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_pQCD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_QPM_diffusion.dat', status='old')
-      !open(unit=16, file='Nantes_diffusion.dat', status='old')
+      open(unit=16, file='Nantes_diffusion.dat', status='old')
       read(16,*) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
       do 3011 i=1, PHSD_nT
         do 3011 j=1, PHSD_nE
@@ -266,3 +266,82 @@ c interpolate gamma_table
 
       end subroutine
 
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c           read PHSD qhat (and impose Einstein relation
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+      subroutine get_PHSD_qhat_ER(drag,kappaL,kappaT,T,p)
+      implicit none
+      include 'df_coms.f'
+
+      integer i, j
+      double precision delta_x, delta_y
+      double precision drag, kappaL, kappaT, T, p, energ
+      double precision kappaL_
+
+      i = (T/0.154 - gamma_TL)/gamma_dT
+      j = (p - gamma_EL)/gamma_dE
+      delta_x = i - int(i)
+      delta_y = j - int(j)
+      i = int(i) + 1
+      j = int(j) + 1
+
+      if (i.lt.1) then
+        i = 1
+        delta_x = 0
+      endif
+
+      if (i.gt.PHSD_nT) then
+        i = PHSD_nT
+        delta_x = 0
+      endif
+
+      if (j.lt.1) then
+        j=1
+        delta_y=0
+      endif
+
+      if (j.gt.PHSD_nE-1) then
+        j=PHSD_nE
+        delta_y=0
+      endif
+
+cc interpolate gamma_table
+      kappaL = PHSD_BL(i,j)*(1-delta_x)*(1-delta_y)
+     &       + PHSD_BL(i+1,j)*delta_x*(1-delta_y)
+     &       + PHSD_BL(i,j+1)*(1-delta_x)*delta_y
+     &       + PHSD_BL(i+1,j+1)*delta_x*delta_y
+
+      kappaL_ = PHSD_BL(i,j+1)*(1-delta_x)*(1-delta_y)
+     &       + PHSD_BL(i+1,j+1)*delta_x*(1-delta_y)
+     &       + PHSD_BL(i,j+1+1)*(1-delta_x)*delta_y
+     &       + PHSD_BL(i+1,j+1+1)*delta_x*delta_y
+
+
+      kappaT = PHSD_BT(i,j)*(1-delta_x)*(1-delta_y)
+     &       + PHSD_BT(i+1,j)*delta_x*(1-delta_y)
+     &       + PHSD_BT(i,j+1)*(1-delta_x)*delta_y
+     &       + PHSD_BT(i+1,j+1)*delta_x*delta_y
+
+
+      energ = sqrt(p**2 + HQmass**2)
+
+cc for ito (pre-point):
+cc     Gamma = BL/(2*E*T) - (BL-BT)/p^2 - d.BL/d.p^2
+      drag = kappaL/(2*T*energ) - (kappaL - kappaT)/p**2 
+     &  - (kappaL_-kappaL)/((2*j+1)*gamma_dE**2 + 2*gamma_EL*gamma_dE)
+
+
+cc for post-point:
+c     Gamma = BL/(2*T*E) - 1./p^2 (sqrt(BL) - sqrt(BT))^2
+!!      drag= kappaL/(2*T*energ)-1d0/p**2*(sqrt(kappaL)-sqrt(kappaT))**2 
+    
+ccc just play around!
+!      drag = kappaL/(2*T*energ)
+!      kappaT = kappaL
+
+      drag = drag*p * 2*T/inv_fm_to_GeV
+      kappaL = kappaL/inv_fm_to_GeV
+      kappaT = kappaT/inv_fm_to_GeV
+      
+      end subroutine
