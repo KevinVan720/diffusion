@@ -71,8 +71,8 @@ c     read in OSU hydro
       endif
    
       if(static.eq.3.and.out_skip.ne.0) then
-          !call readHydroFiles_initial_3D("vHLLE_medium.h5", 1000)
-          call readHydroFiles_initial_3D("PHSD_medium.h5", 1000)
+          call readHydroFiles_initial_3D("vHLLE_medium.h5", 1000)
+          !call readHydroFiles_initial_3D("PHSD_medium.h5", 1000)
       endif
 
 
@@ -436,7 +436,7 @@ c do physics for each time step -- Langevin evolution
  32      continue
 
 c for debug/testing process, output HQ evolution
-!        call outputEvolution(pevent)
+        call outputEvolution(pevent)
  
 c output in time-step loop
 c insert output condition
@@ -1158,7 +1158,7 @@ c for ebe study, rotate the final momentum by the (par) plane
 
         write(21,*) p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
      &    ,p_rx(i,j),p_ry(i,j),p_rz(i,j),p_r0(i,j),Thydro(i,j)
-     &    ,c_vz(i,j)
+     &    ,c_vx(i,j), c_vy(i,j), c_vz(i,j)
 
  1019 continue
  1010 continue

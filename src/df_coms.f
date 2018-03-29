@@ -163,6 +163,7 @@ c parameters/variables for gluon radiation
       double precision cMass,bMass
 !      parameter(cMass=1.27d0,bMass=4.19d0)
       parameter(cMass=1.5d0,bMass=4.19d0)
+!      parameter(cMass=1.3d0, bMass=4.2d0)
 
       double precision HQenergy,HQmass,time,time_init,temp_med,time_tg
       double precision qhat,time_gluon
@@ -189,8 +190,10 @@ c parameters/variables for gluon radiation
       double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)
 
       integer PHSD_nT, PHSD_nE
-      parameter(PHSD_nT=36, PHSD_nE=301)
-      !parameter(PHSD_nT= 60, PHSD_nE=101)
+      !parameter(PHSD_nT=61, PHSD_nE=51)   !Duke
+      !parameter(PHSD_nT=36, PHSD_nE=301)  ! Nantes
+      parameter(PHSD_nT= 60, PHSD_nE=101) ! PHSD, Catania
+      !parameter(PHSD_nT=61, PHSD_nE=101)  ! LBT
       double precision PHSD_A(1:PHSD_nT,1:PHSD_nE),
      &                 PHSD_BL(1:PHSD_nT,1:PHSD_nE),
      &                 PHSD_BT(1:PHSD_nT, 1:PHSD_nE)

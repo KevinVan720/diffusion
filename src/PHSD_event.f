@@ -169,11 +169,15 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       integer i, j
       character*10 dummy_c
       double precision dummy_f
-    
-      !open(unit=16, file='PHSD_diffusion.dat', status='old')
+   
+      !debug
+      !open(unit=16, file='Duke-collision_diffusion.dat',status='old')
+      open(unit=16, file='PHSD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_pQCD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_QPM_diffusion.dat', status='old')
-      open(unit=16, file='Nantes_diffusion.dat', status='old')
+      !open(unit=16, file='LBT_diffusion.dat', status='old')
+      !open(unit=16, file='Nantes_diffusion.dat', status='old')
+      !!!! remember to change the grid size as well!!!
       read(16,*) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
       do 3011 i=1, PHSD_nT
         do 3011 j=1, PHSD_nE
@@ -193,8 +197,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       gamma_dT = (gamma_TH - gamma_TL)/(PHSD_nT-1)
       gamma_dE = (gamma_EH - gamma_EL)/(PHSD_nE-1)
 
-!      write(6,*) "read in PHSD diffusion: ", gamma_TL, gamma_TH,
-!     &           gamma_EL, gamma_EH, gamma_dT, gamma_dE
+      !write(6,*) "read in tabled diffusion: ", gamma_TL, gamma_TH,
+      !&           gamma_EL, gamma_EH, gamma_dT, gamma_dE
  
       close(16)
       return
@@ -206,37 +210,51 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c        return PHSD qhat
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-      subroutine get_PHSD_qhat(drag,kappaL,kappaT,temperature,momentum)
+      subroutine get_PHSD_qhat(drag,kappaL,
+     &                              kappaT,temperature,momentum)
       implicit none
       include 'df_coms.f'
 
+      
       integer i, j
-      double precision delta_x, delta_y
+      double precision delta_x, delta_y, resI, resJ
       double precision drag,kappaL,kappaT,temperature,momentum
+      double precision mass, energ
+    
+      if (iflav.eq.4) then
+        mass = cMass
+      else if (iflav.eq.5) then
+        mass = bMass
+      endif
 
-      i = (temperature/0.154 - gamma_TL)/gamma_dT
-      j = (momentum - gamma_EL)/gamma_dE
-      delta_x = i - int(i)
-      delta_y = j - int(j)
-      i = int(i) + 1
-      j = int(j) + 1
+      !!debug
+      !temperature = 1.038961*0.154
+      !momentum = 1.207958
 
-      if (i.lt.1) then
+
+      resI = (temperature/0.154 - gamma_TL)/gamma_dT + 1
+      resJ = (momentum - gamma_EL)/gamma_dE + 1
+      i = int(resI)
+      j = int(resJ)
+      delta_x = resI - i
+      delta_y = resJ - j
+
+      if (resI.lt.1) then
         i=1
         delta_x=0
       endif
 
-      if (i.gt.PHSD_nT) then
+      if (resI.gt.PHSD_nT) then
         i=PHSD_nT
         delta_x=0
       endif
 
-      if (j.lt.1) then
+      if (resJ.lt.1) then
         j=1
         delta_y=0
       endif
 
-      if (j.gt.PHSD_nE) then
+      if (resJ.gt.PHSD_nE) then
         j=PHSD_nE
         delta_y=0
       endif
@@ -257,12 +275,16 @@ c interpolate gamma_table
      &       + PHSD_BT(i,j+1)*(1-delta_x)*delta_y
      &       + PHSD_BT(i+1,j+1)*delta_x*delta_y
     
-      drag = 2*temperature*drag/inv_fm_to_GeV
+      !corrections!
+      energ = sqrt(momentum**2 + mass**2)
+
+      ! debug
+      !write(6,*) i,j,delta_x, delta_y, 
+      !&      temperature/0.154, momentum, drag, kappaL, kappaT
+
+      drag = 2*temperature* drag*energ/momentum/inv_fm_to_GeV
       kappaL = kappaL/inv_fm_to_GeV
       kappaT = kappaT/inv_fm_to_GeV
-      !kappaL = kappaL/temperature**3
-      !kappaT = kappaT/temperature**3 
-      !write(6,*) "In PHSD: ", temperature, momentum, drag, kappaL
 
       end subroutine
 
@@ -278,6 +300,13 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       double precision delta_x, delta_y
       double precision drag, kappaL, kappaT, T, p, energ
       double precision kappaL_
+      double precision mass
+
+      if (iflav.eq.4) then
+        mass = cMass
+      else if (iflav.eq.5) then
+        mass = bMass
+      endif
 
       i = (T/0.154 - gamma_TL)/gamma_dT
       j = (p - gamma_EL)/gamma_dE
@@ -301,7 +330,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         delta_y=0
       endif
 
-      if (j.gt.PHSD_nE-1) then
+      if (j.gt.PHSD_nE) then
         j=PHSD_nE
         delta_y=0
       endif
@@ -312,11 +341,14 @@ cc interpolate gamma_table
      &       + PHSD_BL(i,j+1)*(1-delta_x)*delta_y
      &       + PHSD_BL(i+1,j+1)*delta_x*delta_y
 
-      kappaL_ = PHSD_BL(i,j+1)*(1-delta_x)*(1-delta_y)
-     &       + PHSD_BL(i+1,j+1)*delta_x*(1-delta_y)
-     &       + PHSD_BL(i,j+1+1)*(1-delta_x)*delta_y
-     &       + PHSD_BL(i+1,j+1+1)*delta_x*delta_y
-
+      if (j.eq.1) then
+        kappaL_ = kappaL
+      else
+        kappaL_ = PHSD_BL(i,j-1)*(1-delta_x)*(1-delta_y)
+     &       + PHSD_BL(i+1,j-1)*delta_x*(1-delta_y)
+     &       + PHSD_BL(i,j+1-1)*(1-delta_x)*delta_y
+     &       + PHSD_BL(i+1,j+1-1)*delta_x*delta_y
+      endif
 
       kappaT = PHSD_BT(i,j)*(1-delta_x)*(1-delta_y)
      &       + PHSD_BT(i+1,j)*delta_x*(1-delta_y)
@@ -324,23 +356,24 @@ cc interpolate gamma_table
      &       + PHSD_BT(i+1,j+1)*delta_x*delta_y
 
 
-      energ = sqrt(p**2 + HQmass**2)
+      energ = sqrt(p**2 + mass**2)
 
 cc for ito (pre-point):
 cc     Gamma = BL/(2*E*T) - (BL-BT)/p^2 - d.BL/d.p^2
-      drag = kappaL/(2*T*energ) - (kappaL - kappaT)/p**2 
-     &  - (kappaL_-kappaL)/((2*j+1)*gamma_dE**2 + 2*gamma_EL*gamma_dE)
+!       drag = kappaL/(2*T*energ) - (kappaL - kappaT)/p**2
+!     &    -(kappaL - kappaL_)/(gamma_dE * 2*p)
 
-
-cc for post-point:
-c     Gamma = BL/(2*T*E) - 1./p^2 (sqrt(BL) - sqrt(BT))^2
-!!      drag= kappaL/(2*T*energ)-1d0/p**2*(sqrt(kappaL)-sqrt(kappaT))**2 
+cc for post-point (not a very good choice)
+c!!     Gamma = BL/(2*T*E) - 1./p^2 (sqrt(BL) - sqrt(BT))^2
+!      drag= kappaL/(2*T*energ)-1d0/p**2*(sqrt(kappaL)-sqrt(kappaT))**2 
     
-ccc just play around!
-!      drag = kappaL/(2*T*energ)
-!      kappaT = kappaL
+c for isotropic case (determine kT and kL from drag)
+      drag = kappaT/(2*T*energ)
+      kappaL = kappaT
+      
 
-      drag = drag*p * 2*T/inv_fm_to_GeV
+
+      drag = drag*energ * 2*T/inv_fm_to_GeV
       kappaL = kappaL/inv_fm_to_GeV
       kappaT = kappaT/inv_fm_to_GeV
       

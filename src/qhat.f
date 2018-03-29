@@ -59,33 +59,32 @@ c a subroutine that reads in qhat_over_T3 table and return qhat value
       include 'df_coms.f'
 
       integer i, j
-      double precision delta_x, delta_y
+      double precision resI, resJ, delta_x, delta_y
       double precision qhat_value, temperature, energy
      
-      i = (temperature - gamma_TL)/gamma_dT 
-      j = (energy - gamma_EL)/gamma_dE
-      delta_x = i - int(i)
-      delta_y = j - int(j)
-      i = int(i) + 1
-      j = int(j) + 1
+      resI = (temperature - gamma_TL)/gamma_dT + 1
+      resJ = (energy - gamma_EL)/gamma_dE + 1
+      i = int(resI)
+      j = int(resJ)
+      delta_x = resI - i
+      delta_y = resJ - j
 
-
-      if (i.lt.1) then
+      if (resI.lt.1) then
         i=1
         delta_x=0
       endif
 
-      if (i.gt.gamma_nT) then
+      if (resI.gt.gamma_nT) then
         i=gamma_nT
         delta_x=0
       endif
 
-      if (j.lt.1) then
+      if (resJ.lt.1) then
         j=1
         delta_y=0
       endif
 
-      if (j.gt.gamma_nE) then 
+      if (resJ.gt.gamma_nE) then 
         j=gamma_nE
         delta_y=0
       endif
