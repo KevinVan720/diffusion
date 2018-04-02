@@ -436,7 +436,7 @@ c do physics for each time step -- Langevin evolution
  32      continue
 
 c for debug/testing process, output HQ evolution
-        call outputEvolution(pevent)
+!        call outputEvolution(pevent)
  
 c output in time-step loop
 c insert output condition
@@ -1069,8 +1069,10 @@ c boost back into computational frame
            endif            ! static.ne.1
 c record cell information, the last interaction will be kept
            Thydro(i,j)=T
-           edensity(i,j)=edensity0
-           sdensity(i,j)=sdensity0
+           !edensity(i,j)=edensity0
+           !sdensity(i,j)=sdensity0
+           edensity(i,j) = tau_p
+           sdensity(i,j) = p_rz(i,j)
            if(static.ne.1) then
              c_vx(i,j)=betax
              c_vy(i,j)=betay
@@ -1233,11 +1235,19 @@ c position vector should also be rotated but not useful yet
 !     &                       c_vy(i,j),c_vz(i,j),edensity(i,j),
 !     &                       p_ip0(i,j),p_ipT(i,j),p_wt(i,j)
         
-            write(20, 2430) pid(i,j),
+!            write(20, 2430) pid(i,j),
+!     &      p_px(i,j), p_py(i,j), p_pz(i,j), p_p0(i,j)
+!     &     ,p_rx(i,j), p_ry(i,j), p_rz(i,j), p_r0(i,j)
+!     &     ,p_ip0(i,j), p_ipT(i,j)
+
+
+            write(20, 2440) 
      &      p_px(i,j), p_py(i,j), p_pz(i,j), p_p0(i,j)
      &     ,p_rx(i,j), p_ry(i,j), p_rz(i,j), p_r0(i,j)
-     &     ,p_ip0(i,j), p_ipT(i,j)
+     &     ,Thydro(i,j), c_vx(i,j), c_vy(i,j), c_vz(i,j)
+     &     ,edensity(i,j), sdensity(i,j), p_wt(i,j)
 
+ 
  2401     continue
  10   continue
 
@@ -1248,6 +1258,7 @@ c position vector should also be rotated but not useful yet
 c sab, oscar modifications
  2420 FORMAT(I10,2X,I10,17(2X,D12.6))
  2430 FORMAT(I10,10(2X,D12.6))
+ 2440 FORMAT(15(D12.6,2X))
 
       return
 

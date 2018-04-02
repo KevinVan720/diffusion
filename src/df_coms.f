@@ -120,10 +120,10 @@ c set number of Langevin steps within hydro step
       integer numXY,NUMSAMP
       double precision initX(mxpart),initY(mxpart),initZ(mxpart)
       double precision initZ0(mxpart),initPX(mxpart),initPY(mxpart)
-      double precision initPZ(mxpart),initE0(mxpart)
+      double precision initPZ(mxpart),initE0(mxpart), initIPT(mxpart)
       common/initXY1/numXY,NUMSAMP
       common/initXY2/initX,initY,initZ,initZ0,
-     &              initPX,initPY,initPZ,initE0
+     &              initPX,initPY,initPZ,initE0,initIPT
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c parameters/variables for gluon radiation

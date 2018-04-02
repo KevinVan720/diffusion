@@ -7,7 +7,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       integer numPart, iret, i
       double precision dum_rx, dum_ry, dum_rz, dum_r0
-      double precision dum_px, dum_py, dum_pz, dum_E
+      double precision dum_px, dum_py, dum_pz, dum_E, dum_ipT
       double precision mass
       character*80 file30
    
@@ -23,7 +23,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       numXY = numXY+1
       read(30, *, err=1199, end=1103) dum_rx, dum_ry, dum_rz,
-     &     dum_r0, dum_px, dum_py, dum_pz, dum_E
+     &     dum_r0, dum_px, dum_py, dum_pz, dum_E, dum_ipT
       initX(numXY) = dum_rx
       initY(numXY) = dum_ry
       initZ(numXY) = dum_rz
@@ -32,6 +32,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       initPY(numXY) = dum_py
       initPZ(numXY) = dum_pz
       initE0(numXY) = sqrt(dum_px**2+dum_py**2+dum_pz**2+cMass**2)
+      initIPT(numXY) = dum_ipT
 
       if(numXY .lt.mxpart) then
         goto 1101
@@ -75,7 +76,7 @@ c let us now do not run random ic
         py(numPart) = initPY(numPart)
         pz(numPart) = initPZ(numPart)
         p0(numPart) = initE0(numPart)
-        pweight(numPart) = 1d0
+        pweight(numPart) = initIPT(numPart)
       enddo
       return
      
