@@ -436,7 +436,9 @@ c do physics for each time step -- Langevin evolution
  32      continue
 
 c for debug/testing process, output HQ evolution
-!        call outputEvolution(pevent)
+        if (mod(tstep, 5) .eq. 0) then
+            call outputEvolution(pevent)
+        endif
  
 c output in time-step loop
 c insert output condition
@@ -595,6 +597,7 @@ c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-
 ! use hdf5 file instead
                 call readHydroInfoYingru(p_r0(i,j),p_rx(i,j),p_ry(i,j),
      &    p_rz(i,j),edensity0,sdensity0,T,betax,betay,betaz,ctl_OSU)
+        
 
                if(temp_cut.ne.1) then
                   write(6,*) "There must be T cut for OSU hydro!"
@@ -1160,7 +1163,7 @@ c for ebe study, rotate the final momentum by the (par) plane
 
         write(21,*) p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
      &    ,p_rx(i,j),p_ry(i,j),p_rz(i,j),p_r0(i,j),Thydro(i,j)
-     &    ,c_vx(i,j), c_vy(i,j), c_vz(i,j)
+     &    ,c_vx(i,j), c_vy(i,j), c_vz(i,j), p_ipT(i,j)
 
  1019 continue
  1010 continue
@@ -1245,7 +1248,7 @@ c position vector should also be rotated but not useful yet
      &      p_px(i,j), p_py(i,j), p_pz(i,j), p_p0(i,j)
      &     ,p_rx(i,j), p_ry(i,j), p_rz(i,j), p_r0(i,j)
      &     ,Thydro(i,j), c_vx(i,j), c_vy(i,j), c_vz(i,j)
-     &     ,edensity(i,j), sdensity(i,j), p_wt(i,j)
+     &     ,edensity(i,j), sdensity(i,j), p_ipT(i,j),p_wt(i,j)
 
  
  2401     continue
@@ -1258,7 +1261,7 @@ c position vector should also be rotated but not useful yet
 c sab, oscar modifications
  2420 FORMAT(I10,2X,I10,17(2X,D12.6))
  2430 FORMAT(I10,10(2X,D12.6))
- 2440 FORMAT(15(D12.6,2X))
+ 2440 FORMAT(16(D12.6,2X))
 
       return
 

@@ -173,10 +173,10 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    
       !debug
       !open(unit=16, file='Duke-collision_diffusion.dat',status='old')
-      open(unit=16, file='PHSD_diffusion.dat', status='old')
+      !open(unit=16, file='PHSD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_pQCD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_QPM_diffusion.dat', status='old')
-      !open(unit=16, file='LBT_diffusion.dat', status='old')
+      open(unit=16, file='LBT_diffusion.dat', status='old')
       !open(unit=16, file='Nantes_diffusion.dat', status='old')
       !!!! remember to change the grid size as well!!!
       read(16,*) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
