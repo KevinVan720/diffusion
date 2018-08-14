@@ -35,41 +35,18 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
 
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-
       call parameterRead
-   
-c     debug
-
-c     "static" can be:  0 -- Chiho's hydro;
-c                       1 -- Static Medium;
-c                       2 -- OSU hydro.
-
-      if(static.ne.0.and.static.ne.1.and.static.ne.2) then
-         write(6,*) "Inappropriate choice for static ..."
-         write(6,*) "Terminating ..."
-         stop
-      endif
-
 c     "flag_rad" can be:  0 -- Only collsional energy loss;
 c                         1 -- Only radiative energy loss;
 c                         2 -- Both collsional and radiative.
 
-      if(flag_rad.ne.0.and.flag_rad.ne.1.and.flag_rad.ne.2) then
-         write(6,*) "Inappropriate choice for flag_rad ..."
-         write(6,*) "Terminating ..."
-         stop
-      endif
+cccccccccc  open hydro file  ccccccccccccccccccccccccccccccccccccccccccccc
+c     "static" can be:  0 -- Chiho's hydro;
+c                       1 -- Static Medium;
+c                       2 -- OSU hydro.
 
-      if(reweight.ne.0.and.reweight.ne.1.and.reweight.ne.2) then
-         write(6,*) "Inappropriate choice for reweight ..."
-         write(6,*) "Terminating ..."
-         stop
-      endif
 
-c     open hydro file  ccccccccccccccccccccccccccccccccccccccccccccc
-
-c     read file header: (Chiho's hydro)
-
+c1    read file header: (Chiho's hydro)
       if(static.eq.0.and.out_skip.ne.0) then
          call read_hydroheader(oflag,hflag,geoflag,ioflag)
          if(ioflag.ne.0) then
@@ -82,13 +59,10 @@ c     read file header: (Chiho's hydro)
          endif
       endif
 
-c     read in OSU hydro
+c2    read in OSU hydro
       if(static.eq.2.and.out_skip.ne.0) then
           call getenv('ftn00', file00)
-          write(6,*) "READ IN HYDROFILE", file00
           call readHydroFiles_initialEZ(file00)
-!         call readHydroFiles_initialEZ("JetData.h5")
-c 1000 is the total buffer size > lifetime / dTau used in hydro output
       endif
 
 c     read weights of pT distributions of initial heavy quark
@@ -102,6 +76,8 @@ c     read weights of pT distributions of initial heavy quark
          endif
       endif
 
+
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     read table for qhat if it depends on T and p
       if(qhat_TP.eq.1 .or. qhat_TP.eq.5) call read_qhat_table
 
@@ -120,8 +96,7 @@ c     NUMSAMP loop, not tested yet.
 
       sampleCount=NUMSAMP
   
-c     read in initial particles
-
+ccccccccccccc read in initial particles cccccccccccccccccccccccccccccc
       if(HQ_input.eq.1) then ! read from OSCAR file
          call read_osc_event(iret)
       elseif(HQ_input.eq.2) then ! read from OSU initial condition
@@ -140,6 +115,8 @@ c     read in initial particles
             stop
          endif
          call read_xy_init(iret)
+      elseif(HQ_input.eq.4) then ! read from (vec_r, vec_p, p_wt)
+         call read_full_init(iret)
       else
          write(*,*) "Wrong value for HQ_input"
          stop
@@ -172,8 +149,7 @@ c     read in initial particles
          stop
       endif
 
-c     loop over samples cccccccccccccccccccccccccccccccccccccccccccccccc
-
+cccc loop over samples cccccccccccccccccccccccccccccccccccccccccccccccc
       pevent=0
 
  3    continue
@@ -190,11 +166,7 @@ c     loop over samples cccccccccccccccccccccccccccccccccccccccccccccccc
       write(6,*)'-> reading PCM event # ',pevent
 
 c     initialize particles' positions
-      if(HQ_input.eq.2.and.sampleCount.ne.NUMSAMP) then
-c         call reSampleXY2
-         write(6,*) "Not ready for HQ_input=2 yet."
-         stop
-      elseif(HQ_input.eq.3.and.sampleCount.ne.NUMSAMP) then
+      if(HQ_input.eq.3.and.sampleCount.ne.NUMSAMP) then
          call reSampleXY3
       endif
 
@@ -221,44 +193,6 @@ c purposes
                p_ry(npt,j)=ry(i)
                p_rz(npt,j)=rz(i)
                if(reweight.ne.0) p_wt(npt,j)=pweight(i)
-
-c rotate the momentum into an arbitrary direction
-               if (rotation.eq.1) then
-                 p_length=sqrt(px(i)**2+py(i)**2+pz(i)**2)
-                 utheta=rlu(0)*2.0-1
-                 phi=rlu(0)*2.0*pi
-                 p_px(npt,j)=p_length*sqrt(1-utheta*utheta)*cos(phi)
-                 p_py(npt,j)=p_length*sqrt(1-utheta*utheta)*sin(phi)
-                 p_pz(npt,j)=p_length*utheta
-                 p_p0(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2+
-     .                p_pz(npt,j)**2+p_mass(npt,j)**2)
-               endif
-c end of rotation
-
-c initial momentum is in the transverse plane with arbitrary direction
-               if (rotation.eq.2) then
-                 p_length=sqrt(px(i)**2+py(i)**2)
-                 phi=rlu(0)*2.0*pi
-                 p_px(npt,j)=p_length*cos(phi)
-                 p_py(npt,j)=p_length*sin(phi)
-                 p_pz(npt,j)=0.0
-                 p_p0(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2+
-     .                p_pz(npt,j)**2+p_mass(npt,j)**2)
-               endif
-c end of rotation
-
-c initial momentum is in the first quadrat of the transverse plane 
-               if (rotation.eq.3) then
-                 p_length=sqrt(px(i)**2+py(i)**2+pz(i)**2)
-                 phi=rlu(0)*0.5*pi
-                 p_px(npt,j)=p_length*cos(phi)
-                 p_py(npt,j)=p_length*sin(phi)
-                 p_pz(npt,j)=0.0
-                 p_p0(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2+
-     .                p_pz(npt,j)**2+p_mass(npt,j)**2)
-               endif
-c end of rotation
-
 c sample initial charms as Moore and Teaney did (with my weight method)
                if (Moore.eq.1) call MTCharm(ityp(i),p_px(npt,j),
      &              p_py(npt,j),p_pz(npt,j),p_p0(npt,j),p_mass(npt,j),
@@ -290,7 +224,11 @@ c special initialization for calculating correlation
                p_ipy(npt,j)=p_py(npt,j)
                p_ipz(npt,j)=p_pz(npt,j)
                p_ip0(npt,j)=p_p0(npt,j)
-               p_ipT(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2)
+               if (HQ_input.eq.4) then
+                 p_ipT(npt, j) = p_wt(npt,j)
+               else
+                 p_ipT(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2)
+               endif
 
 c initialize cell velocity of hydro medium
                c_vx(npt,j)=0d0
@@ -300,6 +238,9 @@ c initialize cell velocity of hydro medium
  11         continue
          endif
  10   continue ! end re-distribute particles in the phase space
+    
+      write(6,*) "In main, end of initalize particles: ",
+     & npt, j, p_px(npt,j-1), p_ipT(npt,j-1)
 
 c now synchronize particles to 1st time-step
 
@@ -2056,6 +1997,63 @@ c calculate total cross section of HQ production
        return
 
        end
+
+CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      subroutine read_full_init(iret)
+      implicit none
+      include 'ucoms.f'
+      include 'df_coms.f'
+
+      integer iret, i, j
+      double precision dumE,dumP,dumW
+      character*80 file30
+      character*90 dummyChar
+      
+      call getenv('ftn30', file30)
+      if (file30(1:4) .ne. '    ') then
+        open(unit=30, file=file30, status='old')
+      endif
+      
+      read(30,*,err=3302,end=3302) dummyChar
+      read(30,*,err=3302,end=3302) dummyChar
+      read(30,*,err=3302,end=3302) dummyChar
+      read(30,*,err=3302,end=3302) event, numXY,
+     &  dumE, dumE, dumP, dumW
+
+      if (num_binary .ne. 0) then
+        write(6,*) "NUM_BINARY NOT CORRECT, set to 0"
+        stop
+        return
+      endif
+
+      npart = numXY
+ 3420 FORMAT(I10,2X,I10,17(2X,D12.6))
+
+      do 3331 i=1, numXY
+        read(unit=30,fmt=3420, err=3302,end=3303) j, ityp(i),
+     &   px(i),py(i),pz(i),p0(i),fmass(i),
+     &   rx(i), ry(i), rz(i), r0(i), 
+     &   frr0(i),frrx(i),frry(i),frrz(i), 
+     &   dumE,dumP,pweight(i),dumW
+ 3331 continue
+
+ 3303 continue 
+        iret = 1
+        write(6,*) "Read in initial_HQ succesfully :)", file30
+        write(6,*) "total initial HQs: ", numXY
+        write(6,*) "particle: ", ityp(numXY),px(numXY),pweight(numXY)
+        return
+
+ 3302 continue
+        iret = -1
+        write(6, *) "Error while reading initial HQ list"
+        stop
+
+
+       end
+
+CXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
 
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
