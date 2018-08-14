@@ -225,7 +225,7 @@ c special initialization for calculating correlation
                p_ipz(npt,j)=p_pz(npt,j)
                p_ip0(npt,j)=p_p0(npt,j)
                if (HQ_input.eq.4) then
-                 p_ipT(npt, j) = p_wt(npt,j)
+                 p_ipT(npt,j) = p_wt(npt,j)
                else
                  p_ipT(npt,j)=sqrt(p_px(npt,j)**2+p_py(npt,j)**2)
                endif

@@ -267,7 +267,8 @@ c error-exit
         call getarg(ArgIndex, buffer)
 !        write(6, *) buffer
         call processAssignment(buffer,"=", varName, DResult)
-        
+       
+        if (varName .EQ. 'hq_input') HQ_input = int(DResult)  ! the creterion to read HQ_input
         if (varName .EQ. "kpamp") KPamp = DResult  ! the amplitude for kP
         if (varName .EQ. "kpsig") KPsig = DResult  ! the sigma for kP       
         if (varName .EQ. "ktamp") KTamp = DResult  ! the amplitude for kT
