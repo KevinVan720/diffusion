@@ -24,6 +24,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       integer oflag,hflag,ioflag,geoflag
       double precision deltat,energ
       double precision rlu,p_length,utheta,phi
+      character*170 file00
 
       rand_seed=-1
       call sseed(rand_seed)
@@ -83,8 +84,10 @@ c     read file header: (Chiho's hydro)
 
 c     read in OSU hydro
       if(static.eq.2.and.out_skip.ne.0) then
-!         call setHydroFilesEZ(1,"JetData.dat",2,"JetCtl.dat",1000) 
-         call readHydroFiles_initialEZ("JetData.h5")
+          call getenv('ftn00', file00)
+          write(6,*) "READ IN HYDROFILE", file00
+          call readHydroFiles_initialEZ(file00)
+!         call readHydroFiles_initialEZ("JetData.h5")
 c 1000 is the total buffer size > lifetime / dTau used in hydro output
       endif
 

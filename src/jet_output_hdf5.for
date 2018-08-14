@@ -385,7 +385,7 @@
 !***********************************************************************
       Subroutine readHydroFiles_initialEZ(H5hydroFilename_in)
       Implicit none
-      CHARACTER(LEN=10) :: H5hydroFilename_in
+      CHARACTER(LEN=20) :: H5hydroFilename_in
       Call readHydroFiles_initial(H5hydroFilename_in, 0, 1000)
       end
 !-----------------------------------------------------------------------
@@ -396,8 +396,8 @@
       Use HDF5
       Implicit none
 
-      CHARACTER(LEN=10) :: H5hydroFilename_in
-      CHARACTER(LEN=10) :: hydroFileH5name ! File name
+      CHARACTER(LEN=20) :: H5hydroFilename_in
+      CHARACTER(LEN=20) :: hydroFileH5name ! File name
       CHARACTER(LEN=8) :: groupEventname = "/Event" ! Group name
 
       Common /fileInfo/ hydroFileH5name, groupEventname
@@ -447,7 +447,7 @@
       Use HDF5
       Implicit none
 
-      CHARACTER(LEN=10) :: hydroFileH5name ! File name
+      CHARACTER(LEN=20) :: hydroFileH5name ! File name
       CHARACTER(LEN=8) :: groupEventname ! Group name
 
       Common /fileInfo/ hydroFileH5name, groupEventname
@@ -502,7 +502,7 @@
       Subroutine printHydrogridInfo()
       Implicit none
 
-      CHARACTER(LEN=10) :: hydroFileH5name ! File name
+      CHARACTER(LEN=20) :: hydroFileH5name ! File name
       CHARACTER(LEN=8) :: groupEventname ! Group name
 
       Common /fileInfo/ hydroFileH5name, groupEventname
@@ -679,7 +679,7 @@
       Use HDF5
       Implicit None
 
-      CHARACTER(LEN=10) :: hydroFileH5name ! File name
+      CHARACTER(LEN=20) :: hydroFileH5name ! File name
       CHARACTER(LEN=8) :: groupEventname ! Group name
       Common /fileInfo/ hydroFileH5name, groupEventname
 
