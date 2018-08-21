@@ -56,6 +56,7 @@ c diffusion/noise parameters:
 
 c other paramters:
       static=2 ! 0-Chiho's hydro, 1-Static, 2-OSU hydro
+      initt=0d6  ! initial time to start evolution?
       tsteps_cut=140
       static_cool=0
       T_static=0.30d0
@@ -153,6 +154,8 @@ c xx: treat line as end of input marker
             read(inputstr,fmt=*,err=88,end=88) flag_rad
          CASE ("static....")
             read(inputstr,fmt=*,err=88,end=88) static
+         CASE ("initt.....")
+            read(inputstr,fmt=*,err=88,end=88) initt
          CASE ("tsteps_cut")
             read(inputstr,fmt=*,err=88,end=88) tsteps_cut
          CASE ("stat_cool.")
@@ -227,6 +230,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          write(6,*) "ebe_flag: ",ebe_flag
          write(6,*) "corr_flag: ",corr_flag
          write(6,*) "static: ",static
+         write(6,*) "initt: ", initt
          write(6,*) "static_cool: ",static_cool
          write(6,*) "T_static: ",T_static
          write(6,*) "tsteps_cut: ",tsteps_cut 
@@ -280,6 +284,7 @@ c error-exit
         write(6,*) qhatMin, qhatSlope, qhatPower
         if (varName .EQ. "prep") preP = DResult
         if (varName .EQ. "qhatc") qhatC = DResult
+        if (varName .EQ. "initt") initt = DResult
         if (varName .EQ. "d2pit") then
                 D2piT = DResult
                 alpha = 6.2832d0/D2piT

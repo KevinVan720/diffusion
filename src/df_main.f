@@ -244,29 +244,34 @@ c initialize cell velocity of hydro medium
 
 c now synchronize particles to 1st time-step
 
-      if(static.eq.2) initt = 0.6d0 ! OSU hydro starts at 0.6~fm/c
+      !if(static.eq.2) initt = 0.6d0 ! OSU hydro starts at 0.6~fm/c
+      !read-in the initt instead
 
       do 20 i=1,npt
          do 21 j=1,evsamp
-            deltat=initt-p_r0(i,j)
+            if (hq_input .EQ. 3) then
+              !deltat=initt-p_r0(i,j)
+              deltat=sqrt(initt**2/(1-p_pz(i,j)**2))
 c note: back-propagation is possible here for the particle
 c       freeze-out time being later than the hydro initial
 c       time! Model works best if there is a clear separation
 c       of time-scales between PCM and Hydro...
 
-            energ = p_p0(i,j)
-            p_r0(i,j)  = initt
-            p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
-            p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
-c            p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
-            p_rz(i,j)  = 0d0
-            if(abs(p_rz(i,j)).gt.initt) then
-               p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
-            endif
-            p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
+              energ = p_p0(i,j)
+              p_r0(i,j)  = initt
+              p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
+              p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
+              p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
+
+              !p_rz(i,j)  = 0d0
+              if(abs(p_rz(i,j)).gt.initt) then
+                 p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
+              endif
+              p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
      &                            (p_r0(i,j)-p_rz(i,j)))
 
-            time_lim(i,j)=initt   ! record time of last interaction
+              time_lim(i,j)=p_r0(i,j) !record time of last interaction
+            endif
  21      continue
  20   continue
 
@@ -335,7 +340,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
       if(static.eq.1.or.static.eq.2) then
          ntsteps=tsteps_cut  ! total time steps for Langevin evolution
-         tau=0.6d0-0.1d0
+         !tau=0.6d0-0.1d0
+         tau=initt-0.1d0
       endif
 
       do 22 tstep=1,ntsteps        
@@ -668,7 +674,7 @@ c      write(6,*)    '    time                        : ',tau_p
 
       if(static.eq.1) then
          T=T_static
-         initt=0.6d0
+         !initt=0.0d0
          if(static_cool.eq.1) then
             T=T_static*(tau_p/initt)**(-1d0/3d0)
          endif
@@ -1268,12 +1274,10 @@ c propagate particle:
             energ    = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
      &                      +p_mass(i,j)**2)
             p_p0(i,j)= energ
-
             p_r0(i,j)  = tau_p+deltat
             p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
             p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
             p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
-
 
 c debug
             if(abs(p_rz(i,j)).gt.tau_p+deltat) then

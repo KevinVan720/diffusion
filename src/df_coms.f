@@ -7,6 +7,7 @@ c     common-blocks:
      &        rotation,temp_cut,qhat_TP
       
       double precision initt,T_static,alpha,w,Tcut_critical,D2piT
+      double precision hydro_tau0
       double precision KFactor,KPamp,KPsig,KTamp,KTsig,preKT
       double precision qhatMin, qhatSlope, qhatPower,preP,qhatC
       double precision TLow,THigh,qhatLow,qhatHigh,qhatA,qhatB
