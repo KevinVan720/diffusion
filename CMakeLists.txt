@@ -45,5 +45,6 @@ add_subdirectory (src)
 
 # install dependencies
 #install (FILES gamma-table_charm.dat  gamma-table_bottom.dat parameters_df.dat dNg_over_dt_cD6.dat dNg_over_dt_bD6.dat DESTINATION ${PROJECT_NAME})
-install (FILES parameters_df.dat dNg_over_dt_cD6.dat dNg_over_dt_bD6.dat DESTINATION bin)
-
+#install (FILES parameters_df.dat dNg_over_dt_cD6.dat dNg_over_dt_bD6.dat DESTINATION share)
+install (FILES dNg_over_dt_cD6.dat dNg_over_dt_bD6.dat DESTINATION share)
+install (FILES parameters_df.dat DESTINATION results)

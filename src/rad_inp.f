@@ -8,28 +8,29 @@
       character*10 dummy_c
       integer dummy_n
 c      double precision time_tg
-c      character*77 file10
+      character*77 file10
       double precision time_tab,temp_tab,HQenergy_tab
 
-c      file10='       '
-c      call getenv('ftn10',file10)
-c      if (file10(1:4).ne.'    ') then
-c         OPEN(UNIT=10,FILE=file10,STATUS='OLD',FORM='FORMATTED')
-c      else 
-c         write(6,*) "Error in loading dNg_over_dt table :("
-c         stop
-c      endif
-         
-      if(iflav.eq.4) then
-         open(unit=10,file='dNg_over_dt_cD6.dat',
-     &        status='old',form='formatted')
-      elseif(iflav.eq.5) then
-         open(unit=10,file='dNg_over_dt_bD6.dat',
-     &        status='old',form='formatted')
-      else
-         write(*,*) "un-recognized heavy quark ID ..."
+      file10='       '
+      call getenv('ftn10',file10)
+      if (file10(1:4).ne.'    ') then
+         OPEN(UNIT=10,FILE=file10,STATUS='OLD',FORM='FORMATTED')
+      else 
+         write(6,*) "Error in loading dNg_over_dt table :("
          stop
       endif
+        
+        
+c      if(iflav.eq.4) then
+c         open(unit=10,file='dNg_over_dt_cD6.dat',
+c     &        status='old',form='formatted')
+c      elseif(iflav.eq.5) then
+c         open(unit=10,file='dNg_over_dt_bD6.dat',
+c     &        status='old',form='formatted')
+c      else
+c         write(*,*) "un-recognized heavy quark ID ..."
+c         stop
+c      endif
 
       k=1
       do while(k.lt.t_gn+1)
