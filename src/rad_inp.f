@@ -8,7 +8,7 @@
       character*10 dummy_c
       integer dummy_n
 c      double precision time_tg
-      character*77 file10
+      character*180 file10
       double precision time_tab,temp_tab,HQenergy_tab
 
       file10='       '
