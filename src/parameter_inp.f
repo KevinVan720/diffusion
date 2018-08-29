@@ -280,10 +280,11 @@ c error-exit
         if (varName .EQ. "qhatmin") qhatMin = DResult   !for linear parameterization
         if (varName .EQ. "qhatslope") qhatSlope = DResult  ! for linear parameterization
         if (varName .EQ. "qhatpower") qhatPower = DResult   ! for linear parameterization
-        write(6,*) qhatMin, qhatSlope, qhatPower
         if (varName .EQ. "prep") preP = DResult
         if (varName .EQ. "qhatc") qhatC = DResult
         if (varName .EQ. "p_static") p_static=DResult
+        if (varName .EQ. "t_static") T_static=DResult
+        write(6,*) p_static, t_static
         if (varName .EQ. "d2pit") then
                 D2piT = DResult
                 alpha = 6.2832d0/D2piT
@@ -325,7 +326,7 @@ c error-exit
         Endif
       EndDo
       
-!      write(6, *) varName 
+      !write(6, *) varName 
       ! convert RHS to numerics(here only take double precision):
       Read(RHS, fmt='(f15.8)') DResult
       

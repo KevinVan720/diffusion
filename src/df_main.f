@@ -71,8 +71,8 @@ c     read in OSU hydro
       endif
    
       if(static.eq.3.and.out_skip.ne.0) then
-          call readHydroFiles_initial_3D("vHLLE_medium.h5", 1000)
-          !call readHydroFiles_initial_3D("PHSD_medium.h5", 1000)
+          !call readHydroFiles_initial_3D("vHLLE_medium.h5", 1000)
+          call readHydroFiles_initial_3D("PHSD_medium.h5", 1000)
       endif
 
 
@@ -436,9 +436,9 @@ c do physics for each time step -- Langevin evolution
  32      continue
 
 c for debug/testing process, output HQ evolution
-        if (mod(tstep, 5) .eq. 0) then
-            call outputEvolution(pevent)
-        endif
+!        if (mod(tstep, 20) .eq. 0) then
+!            call outputEvolution(pevent)
+!        endif
  
 c output in time-step loop
 c insert output condition
@@ -690,13 +690,13 @@ c set transport coefficient if necessary
             else if (qhat_TP.eq.6) then
               plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
               call get_PHSD_qhat(kappa_d,kappa_l,kappa_t,T,plength)
-              D2piT=25.13727d0/(2*kappa_t/ T**3)
+              D2piT=12.56637d0/kappa_t * T**3 / inv_fm_to_GeV
               alpha=6.2832d0/D2piT
               qhat=4d0*alpha/C_F*T**3
             else if (qhat_TP.eq.7) then
               plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2)
               call get_PHSD_qhat_ER(kappa_d,kappa_l,kappa_t,T,plength)
-              D2piT=25.13727d0/(2*kappa_t/T**3)
+              D2piT=12.56637d0/kappa_t * T**3 / inv_fm_to_GeV
               alpha=6.2832/D2piT
               qhat=4d0*alpha/C_F*T**3
 
@@ -1161,9 +1161,11 @@ c for ebe study, rotate the final momentum by the (par) plane
           call rot2D(-par_plane_phi,c_vx(i,j),c_vy(i,j))
         endif ! end rotation
 
-        write(21,*) p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
-     &    ,p_rx(i,j),p_ry(i,j),p_rz(i,j),p_r0(i,j),Thydro(i,j)
-     &    ,c_vx(i,j), c_vy(i,j), c_vz(i,j), p_ipT(i,j)
+!        write(21,*) p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j)
+!     &    ,p_rx(i,j),p_ry(i,j),p_rz(i,j),p_r0(i,j),Thydro(i,j)
+!     &    ,c_vx(i,j), c_vy(i,j), c_vz(i,j), p_ipT(i,j)
+         write(21,*) p_px(i,j),p_py(i,j),p_pz(i,j),p_p0(i,j),
+     &      p_ipT(i,j)
 
  1019 continue
  1010 continue
@@ -1237,18 +1239,18 @@ c position vector should also be rotated but not useful yet
 !     &                       p_rz(i,j),p_r0(i,j),Thydro(i,j),c_vx(i,j),
 !     &                       c_vy(i,j),c_vz(i,j),edensity(i,j),
 !     &                       p_ip0(i,j),p_ipT(i,j),p_wt(i,j)
-        
-!            write(20, 2430) pid(i,j),
-!     &      p_px(i,j), p_py(i,j), p_pz(i,j), p_p0(i,j)
-!     &     ,p_rx(i,j), p_ry(i,j), p_rz(i,j), p_r0(i,j)
-!     &     ,p_ip0(i,j), p_ipT(i,j)
-
-
-            write(20, 2440) 
+ 
+            write(20, 2430) pid(i,j),
      &      p_px(i,j), p_py(i,j), p_pz(i,j), p_p0(i,j)
      &     ,p_rx(i,j), p_ry(i,j), p_rz(i,j), p_r0(i,j)
-     &     ,Thydro(i,j), c_vx(i,j), c_vy(i,j), c_vz(i,j)
-     &     ,edensity(i,j), sdensity(i,j), p_ipT(i,j),p_wt(i,j)
+     &     ,p_ip0(i,j), p_ipT(i,j)
+
+
+!            write(20, 2440) 
+!     &      p_px(i,j), p_py(i,j), p_pz(i,j), p_p0(i,j)
+!     &     ,p_rx(i,j), p_ry(i,j), p_rz(i,j), p_r0(i,j)
+!     &     ,Thydro(i,j), c_vx(i,j), c_vy(i,j), c_vz(i,j)
+!     &     ,edensity(i,j), sdensity(i,j), p_ipT(i,j),p_wt(i,j)
 
  
  2401     continue

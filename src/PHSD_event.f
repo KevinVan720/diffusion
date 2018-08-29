@@ -173,11 +173,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
    
       !debug
       !open(unit=16, file='Duke-collision_diffusion.dat',status='old')
+      !open(unit=16, file='Duke_diffusion.dat', status='old')
       !open(unit=16, file='PHSD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_pQCD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_QPM_diffusion.dat', status='old')
-      open(unit=16, file='LBT_diffusion.dat', status='old')
+      !open(unit=16, file='LBT_diffusion.dat', status='old')
       !open(unit=16, file='Nantes_diffusion.dat', status='old')
+      open(unit=16, file='Lido_diffusion.dat', status='old')
       !!!! remember to change the grid size as well!!!
       read(16,*) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
       do 3011 i=1, PHSD_nT
@@ -337,6 +339,21 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       endif
 
 cc interpolate gamma_table
+      drag =  PHSD_A(i,j)*(1-delta_x)*(1-delta_y)
+     &      + PHSD_A(i+1,j)*delta_x*(1-delta_y)
+     &      + PHSD_A(i,j+1)*(1-delta_x)*delta_y
+     &      + PHSD_A(i+1,j+1)*delta_x*delta_y
+
+      kappaL = PHSD_BL(i,j)*(1-delta_x)*(1-delta_y)
+     &       + PHSD_BL(i+1,j)*delta_x*(1-delta_y)
+     &       + PHSD_BL(i,j+1)*(1-delta_x)*delta_y
+     &       + PHSD_BL(i+1,j+1)*delta_x*delta_y
+
+      kappaT = PHSD_BT(i,j)*(1-delta_x)*(1-delta_y)
+     &       + PHSD_BT(i+1,j)*delta_x*(1-delta_y)
+     &       + PHSD_BT(i,j+1)*(1-delta_x)*delta_y
+     &       + PHSD_BT(i+1,j+1)*delta_x*delta_y
+ 
       kappaL = PHSD_BL(i,j)*(1-delta_x)*(1-delta_y)
      &       + PHSD_BL(i+1,j)*delta_x*(1-delta_y)
      &       + PHSD_BL(i,j+1)*(1-delta_x)*delta_y
@@ -351,27 +368,26 @@ cc interpolate gamma_table
      &       + PHSD_BL(i+1,j+1-1)*delta_x*delta_y
       endif
 
-      kappaT = PHSD_BT(i,j)*(1-delta_x)*(1-delta_y)
-     &       + PHSD_BT(i+1,j)*delta_x*(1-delta_y)
-     &       + PHSD_BT(i,j+1)*(1-delta_x)*delta_y
-     &       + PHSD_BT(i+1,j+1)*delta_x*delta_y
-
-
       energ = sqrt(p**2 + mass**2)
-
+ 
 cc for ito (pre-point):
-cc     Gamma = BL/(2*E*T) - (BL-BT)/p^2 - d.BL/d.p^2
+ccc    Gamma = BL/(2*E*T) - (BL-BT)/p^2 - d.BL/d.p^2
 !       drag = kappaL/(2*T*energ) - (kappaL - kappaT)/p**2
 !     &    -(kappaL - kappaL_)/(gamma_dE * 2*p)
 
+
 cc for post-point (not a very good choice)
-c!!     Gamma = BL/(2*T*E) - 1./p^2 (sqrt(BL) - sqrt(BT))^2
+ccc     Gamma = BL/(2*T*E) - 1./p^2 (sqrt(BL) - sqrt(BT))^2
 !      drag= kappaL/(2*T*energ)-1d0/p**2*(sqrt(kappaL)-sqrt(kappaT))**2 
     
-c for isotropic case (determine kT and kL from drag)
-      drag = kappaT/(2*T*energ)
-      kappaL = kappaT
-      
+c for isotropic case (determine drag and kL from KT)
+!      drag = kappaT/(2*T*energ)
+!      kappaL = kappaT
+
+c for isotropic case (determine kL and kT from drag)
+       kappaT = drag * 2*T*energ
+       kappaL = kappaT
+
 
 
       drag = drag*energ * 2*T/inv_fm_to_GeV
