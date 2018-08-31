@@ -24,6 +24,7 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       integer oflag,hflag,ioflag,geoflag
       double precision deltat,energ
       double precision rlu,p_length,utheta,phi
+      double precision dum_A, dum_B, dum_C
       character*170 file00
 
       rand_seed=-1
@@ -249,29 +250,40 @@ c now synchronize particles to 1st time-step
 
       do 20 i=1,npt
          do 21 j=1,evsamp
-            if (hq_input .EQ. 3) then
-              !deltat=initt-p_r0(i,j)
-              deltat=sqrt(initt**2/(1-p_pz(i,j)**2))
+           if (HQ_input .EQ. 3) then
+             energ = p_p0(i,j)
+             deltat=sqrt(initt**2/(1-(p_pz(i,j)/energ)**2))
 c note: back-propagation is possible here for the particle
 c       freeze-out time being later than the hydro initial
 c       time! Model works best if there is a clear separation
 c       of time-scales between PCM and Hydro...
+             p_r0(i,j)  = p_r0(i,j) + deltat
+             p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
+             p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
+             p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
 
-              energ = p_p0(i,j)
-              p_r0(i,j)  = initt
-              p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
-              p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
-              p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
+           else if (HQ_input .EQ. 4) then
+             energ = p_p0(i,j)
+             dum_A = (1-(p_pz(i,j)/energ)**2)
+             dum_B = 2d0*(p_r0(i,j) - p_rz(i,j)*p_pz(i,j)/energ)
+             dum_C = (p_r0(i,j)**2 - p_rz(i,j)**2) - initt**2
+             deltat = (-dum_B + sqrt(dum_B**2 - 4d0*dum_A*dum_C))/
+     &                (2d0*dum_A)
 
-              !p_rz(i,j)  = 0d0
-              if(abs(p_rz(i,j)).gt.initt) then
-                 p_rz(i,j)=sign(initt-1d-10,p_rz(i,j))
-              endif
-              p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
+             p_r0(i,j) = p_r0(i,j) + deltat
+             p_rx(i,j) = p_rx(i,j) + p_px(i,j)/energ*deltat
+             p_ry(i,j) = p_ry(i,j) + p_py(i,j)/energ*deltat
+             p_rz(i,j) = p_rz(i,j) + p_pz(i,j)/energ*deltat
+           endif        
+
+           if(abs(p_rz(i,j)).gt.p_r0(i,j)) then
+             p_rz(i,j)=sign(p_r0(i,j)-1d-10,p_rz(i,j))
+           endif
+
+           p_reta(i,j)=0.5d0*log((p_r0(i,j)+p_rz(i,j))/
      &                            (p_r0(i,j)-p_rz(i,j)))
 
-              time_lim(i,j)=p_r0(i,j) !record time of last interaction
-            endif
+           time_lim(i,j)=p_r0(i,j) !record time of last interaction
  21      continue
  20   continue
 
@@ -350,7 +362,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
          else
             tau=tau+0.1d0
          endif
-         
+
 c do physics for each time step -- Langevin evolution
          do 32 lstep=1,nlang
             
@@ -669,8 +681,7 @@ c     set deltat
       tau_p=tau+deltat*(lstep-1)
 
 c debug
-c      write(6,*) 'taup ',tau_p,tau,deltat,lstep
-c      write(6,*)    '    time                        : ',tau_p
+!      write(6,*) 'taup ',tau_p,tau,deltat,lstep
 
       if(static.eq.1) then
          T=T_static
@@ -715,6 +726,8 @@ c This is the key call that reads hydro info (e,s,T,vx,vy) at a given (tau,x,y)-
 ! use hdf5 file instead
                 call readHydroInfoYingru(p_r0(i,j),p_rx(i,j),p_ry(i,j),
      &    p_rz(i,j),edensity0,sdensity0,T,betax,betay,betaz,ctl_OSU)
+!            write(*,*) p_r0(i,j),p_rz(i,j),sqrt(p_r0(i,j)**2-p_rz(i,j)**)
+!   &               edensity0, T
 
                if(temp_cut.ne.1) then
                   write(6,*) "There must be T cut for OSU hydro!"
@@ -1274,18 +1287,18 @@ c propagate particle:
             energ    = sqrt(p_px(i,j)**2+p_py(i,j)**2+p_pz(i,j)**2
      &                      +p_mass(i,j)**2)
             p_p0(i,j)= energ
-            p_r0(i,j)  = tau_p+deltat
+            ! propagate HQ should be p_r0(i,j)
+            p_r0(i,j)  = p_r0(i,j) +deltat   ! propagate HQ should be
             p_rx(i,j)  = p_rx(i,j) + p_px(i,j)/energ*deltat
             p_ry(i,j)  = p_ry(i,j) + p_py(i,j)/energ*deltat
             p_rz(i,j)  = p_rz(i,j) + p_pz(i,j)/energ*deltat
 
 c debug
-            if(abs(p_rz(i,j)).gt.tau_p+deltat) then
+            if(abs(p_rz(i,j)).gt.p_r0(i,j)) then
 
                write(6,*) ' tachyon scaled! ',p_rz(i,j),
      &                     tau_p,p_pz(i,j)/energ
-
-               p_rz(i,j)=sign(tau_p+deltat-1d-10,p_rz(i,j))
+               p_rx(i,j)=sign(p_r0(i,j)-1d-10, p_rz(i,j))
                write(6,*) ' new rz ',p_rz(i,j) 
             endif
 

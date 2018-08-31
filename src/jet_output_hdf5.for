@@ -902,7 +902,6 @@
       endif
 
       call readHydroinfoBuffered_ideal(tau,x,y,e,p,s,Temp,vx2d,vy2d)
-      !write(6,*) "e,p,s,T,vx,vy", e,p,s,T,vx2d,vy2d
       vz = z/(t+1D-30)
       gamma = 1d0/(sqrt(1d0-vz*vz) + 1D-30)
       vx = vx2d/gamma
