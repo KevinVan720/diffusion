@@ -192,8 +192,8 @@ c parameters/variables for gluon radiation
       integer PHSD_nT, PHSD_nE
       !parameter(PHSD_nT=61, PHSD_nE=51)   !Duke
       !parameter(PHSD_nT=36, PHSD_nE=301)  ! Nantes
-      parameter(PHSD_nT=60, PHSD_nE=100)   ! Lido
-      !parameter(PHSD_nT= 60, PHSD_nE=101) ! PHSD, Catania
+      !parameter(PHSD_nT=60, PHSD_nE=100)   ! Lido
+      parameter(PHSD_nT= 60, PHSD_nE=101) ! PHSD, Catania
       !parameter(PHSD_nT=61, PHSD_nE=101)  ! LBT
       double precision PHSD_A(1:PHSD_nT,1:PHSD_nE),
      &                 PHSD_BL(1:PHSD_nT,1:PHSD_nE),

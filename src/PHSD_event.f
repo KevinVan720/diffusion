@@ -175,11 +175,11 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       !open(unit=16, file='Duke-collision_diffusion.dat',status='old')
       !open(unit=16, file='Duke_diffusion.dat', status='old')
       !open(unit=16, file='PHSD_diffusion.dat', status='old')
-      !open(unit=16, file='Catania_pQCD_diffusion.dat', status='old')
+      open(unit=16, file='Catania_pQCD_diffusion.dat', status='old')
       !open(unit=16, file='Catania_QPM_diffusion.dat', status='old')
       !open(unit=16, file='LBT_diffusion.dat', status='old')
       !open(unit=16, file='Nantes_diffusion.dat', status='old')
-      open(unit=16, file='Lido_diffusion.dat', status='old')
+      !open(unit=16, file='Lido_diffusion.dat', status='old')
       !!!! remember to change the grid size as well!!!
       read(16,*) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
       do 3011 i=1, PHSD_nT
@@ -200,8 +200,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       gamma_dT = (gamma_TH - gamma_TL)/(PHSD_nT-1)
       gamma_dE = (gamma_EH - gamma_EL)/(PHSD_nE-1)
 
-      !write(6,*) "read in tabled diffusion: ", gamma_TL, gamma_TH,
-      !&           gamma_EL, gamma_EH, gamma_dT, gamma_dE
+      write(6,*) "read in tabled diffusion: ", gamma_TL, gamma_TH,
+     &           gamma_EL, gamma_EH, gamma_dT, gamma_dE
  
       close(16)
       return
@@ -282,8 +282,8 @@ c interpolate gamma_table
       energ = sqrt(momentum**2 + mass**2)
 
       ! debug
-      !write(6,*) i,j,delta_x, delta_y, 
-      !&      temperature/0.154, momentum, drag, kappaL, kappaT
+!      write(6,*) i,j,delta_x, delta_y, 
+!     &      temperature/0.154, momentum, drag, kappaL, kappaT
 
       drag = 2*temperature* drag*energ/momentum/inv_fm_to_GeV
       kappaL = kappaL/inv_fm_to_GeV
@@ -381,13 +381,16 @@ ccc     Gamma = BL/(2*T*E) - 1./p^2 (sqrt(BL) - sqrt(BT))^2
 !      drag= kappaL/(2*T*energ)-1d0/p**2*(sqrt(kappaL)-sqrt(kappaT))**2 
     
 c for isotropic case (determine drag and kL from KT)
-!      drag = kappaT/(2*T*energ)
-!      kappaL = kappaT
+      drag = kappaT/(2*T*energ)
+      kappaL = kappaT
 
 c for isotropic case (determine kL and kT from drag)
-       kappaT = drag * 2*T*energ
-       kappaL = kappaT
+!       kappaT = drag * 2*T*energ
+!       kappaL = kappaT
 
+c for isotropic case (determine KT and drag from KL)
+!      kappaT = kappaL
+!      drag = kappaL / (2*T*energ)
 
 
       drag = drag*energ * 2*T/inv_fm_to_GeV
