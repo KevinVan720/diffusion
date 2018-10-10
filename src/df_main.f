@@ -816,8 +816,10 @@ c set transport coefficient if necessary
 !param13
                   !D2piT=qhatMin**2*(qhatSlope+T)/(qhatPower+Log(energ))
 !param15           
-                  D2piT = qhatMin*(1d0 + qhatSlope*T/Tcut_critical)/
-     &                          (1d0+ qhatPower * Log(energ))
+!                  D2piT = qhatMin*(1d0 + qhatSlope*T/Tcut_critical)/
+!     &                          (1d0+ qhatPower * Log(energ))
+!param20
+                  D2piT=qhatSlope*T/(qhatMin+Log(1.+ energ*T))
                   if (D2piT .lt. 0.5d0) then
                         D2piT = 0.5d0
                   endif
