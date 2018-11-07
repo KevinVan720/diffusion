@@ -7,6 +7,7 @@ c     common-blocks:
      &        rotation,temp_cut,qhat_TP
       
       double precision initt,T_static,alpha,w,Tcut_critical,D2piT
+      double precision kappa_d, kappa_t, kappa_l
       double precision hydro_tau0
       double precision KFactor,KPamp,KPsig,KTamp,KTsig,preKT
       double precision qhatMin, qhatSlope, qhatPower,preP,qhatC
@@ -44,6 +45,7 @@ c set number of Langevin steps within hydro step
      &                TLow,THigh,qhatLow,qhatHigh,qhatA,qhatB,
      &                KTamp,KTsig,KPamp,KPsig,preKT,
      &                qhatMin,qhatSlope,qhatPower,preP,qhatC
+     &                ,kappa_d, kappa_t,kappa_l
       common/otherFlag1/static,static_cool,T_static,
      &                  temp_cut,wt_num,tsteps_cut,num_binary,qhat_TP
       common/otherFlag2/Tcut_critical,wt_int,wt_Tab_min
@@ -181,9 +183,14 @@ c parameters/variables for gluon radiation
       parameter(gamma_nT=31,gamma_nE=101)
       double precision gamma_dT, gamma_dE
       double precision gamma_TL, gamma_TH, gamma_EL, gamma_EH
-      double precision qhat_over_T3(1:gamma_nT,1:gamma_nE)
+      double precision qhat_over_T3(1:gamma_nT,1:gamma_nE),
+     &              kappaA(1:gamma_nT,1:gamma_nE),
+     &              kappaBL(1:gamma_nT,1:gamma_nE),
+     &              kappaBT(1:gamma_nT,1:gamma_nE)
+
       common/qhatTP/gamma_dT, gamma_dE, gamma_TL, gamma_TH, 
-     &              gamma_EL, gamma_EH, qhat_over_T3
+     &              gamma_EL, gamma_EH, qhat_over_T3,
+     &              kappaA, kappaBL, kappaBT
     
 
       

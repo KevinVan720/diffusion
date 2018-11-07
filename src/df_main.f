@@ -81,6 +81,7 @@ c     read weights of pT distributions of initial heavy quark
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c     read table for qhat if it depends on T and p
       if(qhat_TP.eq.1 .or. qhat_TP.eq.5) call read_qhat_table
+      if(qhat_TP.eq.6 .or. qhat_TP.eq.7) call read_kappaLT_table
 
 c     read table for gluon radiation
       if(flag_rad.ne.0) call read_radTable
@@ -659,8 +660,9 @@ c most important subroutine -- do Langevin evolution
       double precision dkpx_gluon,dkpy_gluon,width_gluon,tau_f
       double precision dkT_gluon,plength
 c      double precision kT_dum
-      double precision rgau_mean,rgau_width(3),rgau,kappa_d,kappa_t,
-     &                 kappa_l
+!      double precision rgau_mean,rgau_width(3),rgau,kappa_d,kappa_t,
+!     &                 kappa_l
+      double precision rgau_mean, rgau_width(3), rgau
       double precision xi_gauss(3),T,v_x,v_y,v_z,v2,e_old,xi(3)
       double precision theta,phi,rr,dum
       double precision lim_low,lim_high,lim_int,max_Ng,deltat_lrf
@@ -826,7 +828,6 @@ c set transport coefficient if necessary
                   alpha=6.2832d0/D2piT
                   qhat=4.0*alpha/C_F*T**3
 
-!                  write(6,*) qhatMin, qhatSlope, qhatPower
 
                else if(qhat_TP.eq.4) then
 !param14
@@ -840,8 +841,6 @@ c set transport coefficient if necessary
                   qhat=4.0*alpha/C_F*T**3
 
                else if(qhat_TP .eq. 5) then
-!param17
-!D2piT=2/pi*arctan(p/qhatPower)*pQCD + 2*pi/arccot(p/qhatPower)*(linear)
 !param18
 !D2piT=(qhatPower**2*pT)**2/(1+(qhatPower**2*pT)**2) * pQCD +
 !1/(1+(qhatPower**2*pT)**2) * linear
@@ -850,10 +849,8 @@ c set transport coefficient if necessary
                  !param18-2 
                  !dum_D2piT=qhatMin + qhatSlope*(T/Tcut_critical -1.)
                  !param18 
-                 dum_D2piT=qhatMin*(1d0+qhatSlope*(T/Tcut_critical-1.))
-                 
-                 plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+ p_pz(i,j)**2)
-
+               dum_D2piT=qhatMin*(1d0+qhatSlope*(T/Tcut_critical-1.))
+               plength=sqrt(p_px(i,j)**2+p_py(i,j)**2+ p_pz(i,j)**2)
 
                D2piT=(1d0-1d0/(1d0+((qhatPower**2)*plength)**2))*D2piT 
      &         + 1d0/(1d0+((qhatPower**2)*plength)**2)*dum_D2piT
@@ -862,9 +859,14 @@ c set transport coefficient if necessary
                      D2piT = 0.1d0
                 endif
 
-!                 write(6,*) dum_D2piT, D2piT
                  alpha=6.2832d0/D2piT
                  qhat=4d0*alpha/C_F*T**3
+
+                else if (qhat_TP.eq.6) then
+                  call get_kappaLT(kappa_d,kappa_l,kappa_t,T,energ)
+                  D2piT=12.56637d0/kappa_t * T**3 / inv_fm_to_GeV
+                  alpha=6.2832d0/D2piT
+                  qhat=4d0*alpha/C_F*T**3
 
                else
                   write(6,*) "Wrong value for qhat_TP."
@@ -939,12 +941,6 @@ c                  time_num=int((time-time_init)/delta_tg+0.5d0)+1
      &                     *6d0/D2piT
                   max_Ng=max_dNgfnc(time_num,temp_num,HQenergy_num)
      &                   *6d0/D2piT
-
-!                  if(qhat_TP.eq.1) delta_Ng=delta_Ng*KTfactor
-! by yingru, second parameterization: (let us not to rescale alpha_s this time)
-
-
-c                  write(6,*) temp_num,HQenergy_num,delta_Ng
 
                   if(delta_Ng*deltat_lrf.gt.1.d0) then
                      write(30,*) 'gluon emission probability exceeds 1'
@@ -1128,14 +1124,15 @@ c debug
                   v2 = min(0.9999999,v2)
 
 c     get paramters for noise calculation:
+               if(qhat_TP.ne.6 .and. qhat_TP.ne.7) then
                   kappa_d=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
                   kappa_l=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
                   kappa_t=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
+                endif
                
                   if(pdep_flag.eq.1) then
                      kappa_t = kappa_t/sqrt(1d0-v2)
                      kappa_l = kappa_l/(1d0-v2)
-
                      kappa_d = 2*T* kappa_d*(1d0/(2d0*T*(1d0-v2)) 
      &                               - (1d0+v2-sqrt(1d0-v2))/
      &                                 (p_mass(i,j)*v2*sqrt(1d0-v2)))

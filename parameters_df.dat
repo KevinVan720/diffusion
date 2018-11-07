@@ -3,12 +3,13 @@
 #
 flag_rad..    2       ! Energy loss mechanism: 0-collisional; 1-radiative; 2-both.
 iflav.....    4       ! Flavor of parton to select: 4-charm; 5-beauty.
-qhat_TP...    5       ! 0: constant qhat/T^3
+qhat_TP...    6       ! 0: constant qhat/T^3
                       ! 1: use table of qhat/T^3 as functions of T,p
                       ! 2: use linear parametrization of T only
                       ! 3: use linear parameterization with momentum dependence
                       ! 4: use only momentum dependence
                       ! 5: use combination from pQCD and linear temperature
+                      ! 6: read in drag, kappaL, kappaT
 # 5 parameters of T, p dependent K factors
 KPamp.....    3.0     ! amplitude of P Kactor
 KPsig.....    7.0     ! width of P Kactor
