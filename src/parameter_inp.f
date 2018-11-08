@@ -28,6 +28,8 @@ c set default values
       qhat_TP=0   ! 0: constant qhat/T^3
                   ! 1: read a table of qhat/T^3 as functios of T,p
 
+c radiative curoff parameters:
+      alphaMU=1.0
 c diffusion/noise parameters:
       D2piT=6d0
       KFactor=1d0
@@ -278,6 +280,7 @@ c error-exit
         if (varName .EQ. "ktamp") KTamp = DResult  ! the amplitude for kT
         if (varName .EQ. "ktsig") KTsig = DResult  ! the sigma for kT
         if (varName .EQ. "prekt") preKT = DResult  ! the sigma for preKT
+        if (varName .EQ. "alphamu") alphaMU = DResult  ! radiative coupling constant
         if (varName .EQ. "qhatmin") qhatMin = DResult   !for linear parameterization
         if (varName .EQ. "qhatslope") qhatSlope = DResult  ! for linear parameterization
         if (varName .EQ. "qhatpower") qhatPower = DResult   ! for linear parameterization

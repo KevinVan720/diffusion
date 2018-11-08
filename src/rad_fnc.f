@@ -14,12 +14,15 @@ c medium temperature, and alphas=alphas(pi*temp) if kT<pi*temp due to
 c screening effect. It's a first order calculation.
 
       implicit none
-
       include 'ucoms.f'
+
       double precision alphas,kT0,kT1,temp0,nflavor,lambdas,error_para
 
-      error_para=1.d0
+      !error_para=1.d0
 
+      ! additional cut-off for running coupling
+      error_para=alphaMU
+    
       if(kT0.lt.PI*temp0*error_para) then
          kT1=PI*temp0*error_para
       else

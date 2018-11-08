@@ -1125,6 +1125,7 @@ c debug
 
 c     get paramters for noise calculation:
                if(qhat_TP.ne.6 .and. qhat_TP.ne.7) then
+               !if (qhat_TP.ne.7) then
                   kappa_d=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
                   kappa_l=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor
                   kappa_t=2*alpha*T**3/inv_fm_to_GeV ! alpha is a dimensionless factor

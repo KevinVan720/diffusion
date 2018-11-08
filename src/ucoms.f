@@ -14,6 +14,11 @@ c
 c      parameter (nmax = 2000)
       parameter (nmax = 2000000)
 
+      double precision alphaMU
+      common /radiativeConst/ alphaMU
+      
+
+
 c     this parameter MUST match MSTV(3) in BMS
       integer mstv3
       parameter (mstv3 = 1000)
