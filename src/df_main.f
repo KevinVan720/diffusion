@@ -1149,6 +1149,11 @@ c generate new noise
                   do k=1,3
                      xi_gauss(k)=rgau(0,rgau_mean,rgau_width(k))
                   enddo
+                  
+                  if (kappa_l .lt. 0) then
+                  write(6,*) "before rotation: ", xi_gauss(3),
+     &              rgau_width(3), kappa_l
+                  endif
 
 c get angles
                   call getang(p_px(i,j),p_py(i,j),p_pz(i,j),
@@ -1186,7 +1191,6 @@ c rotate xi's to particle axis:
 c     get angles
                      call getang(p_px(i,j),p_py(i,j),p_pz(i,j),
      &                        theta,phi,rr)
-
 c rotate xi's:
                      call rotbos(theta,phi,0d0,0d0,0d0,
      &                        xi(1),xi(2),xi(3),dum)
@@ -1196,7 +1200,6 @@ c rotate xi's:
                      xi_z(i,j)=xi(3)
 
 c initialize v_bar's and kv/T at zero time-step
-
                      p_vbx(i,j)=(2d0-w)/(2d0*w) * v_x * kappa_d/T
                      p_vby(i,j)=(2d0-w)/(2d0*w) * v_y * kappa_d/T
                      p_vbz(i,j)=(2d0-w)/(2d0*w) * v_z * kappa_d/T
@@ -1298,6 +1301,7 @@ c debug
 
                write(6,*) ' tachyon scaled! ',p_rz(i,j),
      &                     tau_p,p_pz(i,j)/energ
+     &                   , p_vbz(i,j), xi_z(i,j), p_pz(i,j)
                p_rx(i,j)=sign(p_r0(i,j)-1d-10, p_rz(i,j))
                write(6,*) ' new rz ',p_rz(i,j) 
             endif

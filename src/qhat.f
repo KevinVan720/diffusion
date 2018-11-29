@@ -173,7 +173,7 @@ c a subroutine that reads in qhat_over_T3 table and return qhat value
       i = int(resI)
       j = int(resJ)
       delta_x = resI - i
-      delta_y = resI - j
+      delta_y = resJ - j
 
 
       if (resI.lt.1) then
@@ -212,12 +212,18 @@ c interpolate gamma_table
      &        + kappaBT(i,j+1)*(1-delta_x)*delta_y
      &        + kappaBT(i+1,j+1)*delta_x*delta_y
 
+    
+      if (kappaL .lt. 0) then
+        write(6,*) kappaL,kappaBL(i,j), kappaBL(i+1,j), kappaBL(i,j+1),
+     &          kappaBL(i+1,j+1), delta_x, delta_y
+      endif
 
       ! convert the unit
       momentum = sqrt(energy**2 - mass**2)
       drag = 2*temperature*drag*energy/momentum/inv_fm_to_GeV
       kappaL = kappaL/inv_fm_to_GeV
       kappaT = kappaT/inv_fm_to_GeV
+
 
       end subroutine
 
