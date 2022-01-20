@@ -112,8 +112,17 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        integer i, j
        character*10 dummy_c
        double precision dummy_f
+       
+       if(iflav.eq.4) then
+         open(unit=16,file='gamma-table_charm.dat', status='old')
+       elseif(iflav.eq.5) then
+         open(unit=16,file='gamma-table_bottom.dat', status='old')
+       else
+         write(*,*) "un-recognized heavy quark ID ..."
+         stop
+       endif
 
-       open(unit=16, file='gamma-table_charm.dat', status='old')
+c      open(unit=16, file='gamma-table_charm.dat', status='old')
        read(16, *) dummy_c, dummy_c, dummy_c, dummy_c, dummy_c
      
        do 3011 j=1, gamma_nE
